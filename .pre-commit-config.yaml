@@ -1,0 +1,57 @@
+exclude: tests/fixtures
+
+default_stages: [commit, manual]
+default_install_hook_types: ["pre-commit", "commit-msg"]
+repos:
+  - repo: https://github.com/rtts/djhtml
+    rev: 3.0.6
+    hooks:
+      - id: djhtml
+      - id: djcss
+      - id: djjs
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.1
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix, --unsafe-fixes]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: debug-statements
+      - id: no-commit-to-branch
+        stages: [commit]
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types_or: [markdown]
+        args: [--prose-wrap=always, --print-width=88]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.1
+    hooks:
+      - id: mypy
+        args: [--strict]
+        language: system
+        name: Run MyPy typing checks.
+        entry: bash -c "mypy ."
+        pass_filenames: false
+        verbose: true
+        types: ["python"]
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.27.0
+    hooks:
+      - id: commitizen
+        stages:
+          - commit-msg
+  - repo: local
+    hooks:
+      - id: migrations-check
+        language: system
+        name: Check for uncreated migrations.
+        entry: poetry run ./manage.py makemigrations --check --dry-run
+        types: ["python"]
+        pass_filenames: false
+        stages: [commit]

@@ -1,0 +1,79 @@
+{% load static %}
+{% load crispy_forms_tags %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Project</title>
+        <!-- Add other CSS files as needed -->
+    </head>
+    <body>
+        <div class="container text-center">
+            <div class="row justify-content-md-center">
+                <div class="col col-md-10">
+                    <h1>Enter a URL to Crawl</h1>
+                </div>
+            </div>
+            <div class="row justify-content-md-center">
+                <div class="col col-md-10">
+                    <form method="post">
+                        {% crispy form %}
+                    </form>
+                </div>
+            </div>
+            <div class="row justify-content-md-center">
+                <div class="col col-md-10">
+                    <div id="iframeContainer">
+                        <iframe id="contentFrame" src="{{ url }}" style="width: 100%; height: 1000px;"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('contentFrame').addEventListener('load', function() {
+                const iframe = document.getElementById('contentFrame');
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+
+                iframeDocument.addEventListener('click', function(event) {
+                    const element = event.target;
+                    const selector = generateCssSelector(element);
+                    console.log(selector);
+
+                    const element_selector = document.getElementById('id_element_selector');
+                    element_selector.setAttribute('value', selector);
+
+                    const crawlButton = document.getElementById('id_crawl');
+                    crawlButton.classList.remove('disabled');
+
+                // alert("'" + selector + "' Has just been selected.");
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+            });
+
+            function generateCssSelector(element) {
+                if (element.tagName.toLowerCase() === 'html')
+                    return 'html';
+                let str = element.tagName.toLowerCase();
+                if (element.id) {
+                    str += '#' + element.id;
+                    return str;
+                }
+                if (element.className) {
+                    let className = element.className.replace(/\s?$/,'')
+                    str += '.' + className.split(' ').join('.');
+                }
+                const parent = element.parentNode;
+                if (parent) {
+                    str = generateCssSelector(parent) + ' > ' + str;
+                }
+                return str;
+            }
+        </script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+                crossorigin="anonymous"></script>
+    </body>
+</html>
