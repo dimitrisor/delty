@@ -28,7 +28,7 @@ class PageSnapshot(BaseModel):
 class SelectedElement(BaseModel):
     snapshot = models.ForeignKey(PageSnapshot, on_delete=models.CASCADE)
     content = models.TextField()
-    hash = models.CharField(max_length=64, unique=True)
+    hash = models.CharField(max_length=64)
     selector = models.TextField()
 
     class Meta:

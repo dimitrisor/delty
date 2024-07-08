@@ -1,10 +1,16 @@
+import difflib
+from typing import Iterator
+
 from bs4 import BeautifulSoup
 from django.core.cache import cache
+from django.db import transaction
 from requests import Response
 
 from delty.clients.web_client import WebClient
 from delty.constants import CACHE_ADDRESS_TEXT, CACHE_ADDRESS_CONTENT_TYPE
 from delty.errors import WebPageUnreachable
+from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
+from delty.utils import compute_sha256
 
 
 class CrawlerService:
@@ -65,3 +71,33 @@ class CrawlerService:
 
         # return the selected element
         return str(soup.select(css_selector)[0])
+
+    def get_diff(self, base_html_lines: str, new_html_lines: str) -> Iterator[str]:
+        base_lines = base_html_lines.splitlines()
+        new_lines = new_html_lines.splitlines()
+        return difflib.ndiff(base_lines, new_lines)
+
+    def create_crawling_job(
+        self, user, url, element_selector, page_html, selected_element_content
+    ):
+        with transaction.atomic():
+            address, _ = UrlAddress.objects.get_or_create(url=url)
+            snapshot, _ = PageSnapshot.objects.get_or_create(
+                address=address,
+                hash=compute_sha256(page_html),
+                defaults={"content": page_html},
+            )
+            selected_element, _ = SelectedElement.objects.get_or_create(
+                snapshot=snapshot,
+                selector=element_selector,
+                hash=compute_sha256(selected_element_content),
+                defaults={"content": selected_element_content},
+            )
+            crawling_job = CrawlingJob.objects.create(
+                user=user,
+                url_address=address,
+                selected_element=selected_element,
+                status=CrawlingJob.Status.ACTIVE,
+            )
+
+        return crawling_job

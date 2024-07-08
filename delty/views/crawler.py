@@ -1,6 +1,6 @@
 from delty.errors import WebPageUnreachable
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect
 from django.views.generic import View
 
 from delty.exceptions import ServiceException
@@ -13,15 +13,14 @@ from delty.views.mixins import LoginRequiredMixin
 class CrawlerView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         form = CrawlingSubmissionForm(request.POST)
-        context = {"form": form}
         if form.is_valid():
             try:
                 url = form.cleaned_data["url"]
                 element_selector = form.cleaned_data["element_selector"]
-                initiate_element_crawling.execute(url, element_selector)
+                initiate_element_crawling.execute(request.user, url, element_selector)
             except ServiceException as e:
                 form.add_error("url", str(e.detail))
-        return render(request, "index.html", context)
+        return redirect("index")
 
 
 class RenderURLView(LoginRequiredMixin, View):

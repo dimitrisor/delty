@@ -1,11 +1,8 @@
 from dataclasses import dataclass
 
 from django.contrib.auth.models import User
-from django.db import transaction
 
 from delty.services.crawler import CrawlerService
-from delty.models import UrlAddress, PageSnapshot, SelectedElement, CrawlingJob
-from delty.utils import compute_sha256
 
 
 @dataclass
@@ -21,27 +18,10 @@ class InitiateElementCrawling:
         selected_element_content = self.crawler.get_selected_element_content(
             page_html, element_selector
         )
-
-        with transaction.atomic():
-            address, _ = UrlAddress.objects.get_or_create(url=url)
-            snapshot, _ = PageSnapshot.objects.get_or_create(
-                address=address,
-                hash=compute_sha256(page_html),
-                defaults={"content": page_html},
-            )
-            selected_element = SelectedElement.objects.get_or_create(
-                snapshot=snapshot,
-                selector=element_selector,
-                defaults={"content": selected_element_content},
-            )
-            crawling_job = CrawlingJob.objects.create(
-                user=user,
-                url_address=address,
-                selected_element=selected_element,
-                status=CrawlingJob.Status.ACTIVE,
-            )
-
-        return CrawlingJobDto(id=crawling_job.id)
+        crawling_job = self.crawler.create_crawling_job(
+            user, url, element_selector, page_html, selected_element_content
+        )
+        return CrawlingJobDto(crawling_job.id)
 
 
 initiate_element_crawling = InitiateElementCrawling()
