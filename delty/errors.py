@@ -15,13 +15,11 @@ class NotFoundException(ServiceException):
     default_title = "Not Found"
 
 
-# class ValidationException(ServiceException):
-#     """Validation Exception."""
-#
-#     default_status_code = 422
-#     default_title = "Validation Failed"
-
-
 class WebPageUnreachable(ValidationException):
     default_detail = "Failed to reach the desired page."
     default_code = 6006
+
+
+class CrawlingJobAlreadyExists(ValidationException):
+    default_detail = "Crawling job already exists."
+    default_code = 6007

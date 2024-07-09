@@ -1,6 +1,9 @@
 import difflib
+from io import BytesIO
 from typing import Iterator
 
+import boto3
+from django.conf import settings
 from bs4 import BeautifulSoup
 from django.core.cache import cache
 from django.db import transaction
@@ -8,9 +11,17 @@ from requests import Response
 
 from delty.clients.web_client import WebClient
 from delty.constants import CACHE_ADDRESS_TEXT, CACHE_ADDRESS_CONTENT_TYPE
-from delty.errors import WebPageUnreachable
+from delty.errors import WebPageUnreachable, CrawlingJobAlreadyExists
 from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
 from delty.utils import compute_sha256
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+    region_name=settings.AWS_S3_REGION_NAME,
+)
 
 
 class CrawlerService:
@@ -81,18 +92,35 @@ class CrawlerService:
         self, user, url, element_selector, page_html, selected_element_content
     ):
         with transaction.atomic():
+            page_html_hash = compute_sha256(page_html)
+            selected_element_hash = compute_sha256(selected_element_content)
+
+            if CrawlingJob.objects.filter(
+                user=user,
+                url_address__url=url,
+                url_address__snapshots__hash=page_html_hash,
+                selected_element__hash=selected_element_hash,
+                status=CrawlingJob.Status.ACTIVE,
+            ).exists():
+                raise CrawlingJobAlreadyExists()
+
             address, _ = UrlAddress.objects.get_or_create(url=url)
             snapshot, _ = PageSnapshot.objects.get_or_create(
                 address=address,
-                hash=compute_sha256(page_html),
-                defaults={"content": page_html},
+                hash=page_html_hash,
+                # defaults={"content": page_html},
             )
-            selected_element, _ = SelectedElement.objects.get_or_create(
+            selected_element, created = SelectedElement.objects.get_or_create(
                 snapshot=snapshot,
                 selector=element_selector,
-                hash=compute_sha256(selected_element_content),
+                hash=selected_element_hash,
                 defaults={"content": selected_element_content},
             )
+            if created:
+                self.store_selected_element_content(
+                    file_name=f"{selected_element.hash}.html",
+                    content=selected_element_content,
+                )
             crawling_job = CrawlingJob.objects.create(
                 user=user,
                 url_address=address,
@@ -101,3 +129,14 @@ class CrawlerService:
             )
 
         return crawling_job
+
+    def store_selected_element_content(self, file_name: str, content: str):
+        s3.upload_fileobj(
+            Fileobj=BytesIO(content.encode("utf-8")),
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+            Key=file_name,
+        )
+
+    def get_selected_element_content_from_s3(self, file_name: str) -> str:
+        obj = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=file_name)
+        return obj["Body"].read().decode("utf-8")
