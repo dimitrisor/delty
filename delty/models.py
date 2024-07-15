@@ -16,12 +16,13 @@ class BaseModel(models.Model):
 
 
 class UrlAddress(BaseModel):
-    url = models.URLField(unique=True)
+    url = models.URLField(unique=True, max_length=2083)
 
 
 class PageSnapshot(BaseModel):
-    address = models.ForeignKey(UrlAddress, on_delete=DO_NOTHING)
-    content = models.TextField()
+    address = models.ForeignKey(
+        UrlAddress, on_delete=DO_NOTHING, related_name="snapshots"
+    )
     hash = models.CharField(max_length=64)
 
 
