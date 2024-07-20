@@ -3,6 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Field, Layout, Row, Column, HTML
 from django import forms
 from django.core.validators import URLValidator
+from django.urls import reverse
 
 
 class AddressForm(forms.Form):
@@ -52,7 +53,7 @@ class AddressForm(forms.Form):
                             type="submit",
                             id="id_crawl",
                             css_class="btn btn-primary disabled",
-                            formaction="/initiate_crawilng",
+                            formaction=reverse("initiate_crawilng"),
                         ),
                     ),
                     css_class="input-group",
