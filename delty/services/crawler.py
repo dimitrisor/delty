@@ -13,6 +13,7 @@ from delty.clients.web_client import WebClient
 from delty.constants import CACHE_ADDRESS_TEXT, CACHE_ADDRESS_CONTENT_TYPE
 from delty.errors import WebPageUnreachable, CrawlingJobAlreadyExists
 from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
+from delty.services.dom_processor import DomProcessor
 from delty.utils import compute_sha256
 
 s3 = boto3.client(
@@ -31,16 +32,19 @@ class CrawlerService:
     def fetch_response(
         self, url: str, check_crawlability: bool = False
     ) -> tuple[str, str]:
-        if text := cache.get(CACHE_ADDRESS_TEXT.format(url)):
+        if content := cache.get(CACHE_ADDRESS_TEXT.format(url)):
             content_type = cache.get(CACHE_ADDRESS_CONTENT_TYPE.format(url))
         else:
             response = WebClient().get_response(url, check_crawlability)
             assert isinstance(response, Response)
-            text = response.text
+
+            # content = DomProcessor.replace_relative_links(base_url=url, html_content=response.text)
+            content = response.text
+
             content_type = response.headers.get("Content-Type")
             cache.set(
                 CACHE_ADDRESS_TEXT.format(url),
-                text,
+                content,
                 timeout=60 * 5,
             )
             cache.set(
@@ -49,7 +53,7 @@ class CrawlerService:
                 timeout=60 * 5,
             )
 
-        return text, content_type
+        return content, content_type
 
     def is_address_crawlable(self, url: str) -> bool:
         """
@@ -79,6 +83,8 @@ class CrawlerService:
         # kill all script and style elements
         for script in soup(["script", "style"]):
             script.extract()
+
+        css_selector = DomProcessor.escape_css_selector(css_selector=css_selector)
 
         # return the selected element
         return str(soup.select(css_selector)[0])
