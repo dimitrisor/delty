@@ -19,3 +19,18 @@ services:
       - ${TEMPDIR:-/tmp/localstack}:/tmp/localstack
       - /var/run/docker.sock:/var/run/docker.sock
       - ./init-s3-bucket.sh:/docker-entrypoint-initaws.d/init-s3-bucket.sh
+
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=delty
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
