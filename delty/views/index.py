@@ -22,7 +22,7 @@ class IndexView(LoginRequiredMixin, TemplateView):
                 url = form.cleaned_data["url"]
                 check_address_crawlability.execute(url)
                 full_url = request.build_absolute_uri(
-                    f"{reverse("render_url")}?{urlencode({"url": url})}"
+                    f'{reverse("render_url")}?{urlencode({"url": url})}'
                 )
                 context["url"] = full_url
             except ServiceException as e:
