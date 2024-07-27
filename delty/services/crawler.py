@@ -38,8 +38,9 @@ class CrawlerService:
             response = WebClient().get_response(url, check_crawlability)
             assert isinstance(response, Response)
 
-            # content = DomProcessor.replace_relative_links(base_url=url, html_content=response.text)
-            content = response.text
+            content = DomProcessor.convert_relative_to_absolute(
+                base_url=url, html_content=response.text
+            )
 
             content_type = response.headers.get("Content-Type")
             cache.set(
