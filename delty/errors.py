@@ -20,6 +20,11 @@ class WebPageUnreachable(ValidationException):
     default_code = 6006
 
 
+class CssSelectorHtmlElementNotFound(ValidationException):
+    default_detail = "No HTML element found for that css selector."
+    default_code = 6006
+
+
 class CrawlingJobAlreadyExists(ValidationException):
     default_detail = "Crawling job already exists."
     default_code = 6007
