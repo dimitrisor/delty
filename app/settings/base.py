@@ -23,7 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-vypj6sl+h^8b-3g54kglt!2(5wveu4(&tqcgh4xv1i&6a1-e@b"
+SECRET_KEY: str | None = (
+    "django-insecure-vypj6sl+h^8b-3g54kglt!2(5wveu4(&tqcgh4xv1i&6a1-e@b"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -145,4 +147,4 @@ DATABASES = {
 
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-from .s3 import *  # noqa
+from .extras.s3 import *  # noqa
