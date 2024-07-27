@@ -20,7 +20,7 @@ class IndexView(LoginRequiredMixin, TemplateView):
         if form.is_valid():
             try:
                 url = form.cleaned_data["url"]
-                check_address_crawlability.execute(url)
+                check_address_crawlability.execute(request.user, url)
                 full_url = request.build_absolute_uri(
                     f'{reverse("render_url")}?{urlencode({"url": url})}'
                 )
