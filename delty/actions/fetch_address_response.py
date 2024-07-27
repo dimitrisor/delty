@@ -1,9 +1,9 @@
-from delty.services.crawler import CrawlerService
+from delty.actions.common import fetch_response
 
 
 class FetchAddressResponse:
     def execute(self, url: str) -> tuple[str, str]:
-        return CrawlerService().fetch_response(url)
+        return fetch_response(url)
 
 
 fetch_address_response = FetchAddressResponse()

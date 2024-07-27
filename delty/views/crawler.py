@@ -1,8 +1,8 @@
-from delty.errors import WebPageUnreachable
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.views.generic import View
 
+from delty.errors import WebPageUnreachable
 from delty.exceptions import ServiceException
 from delty.actions.fetch_address_response import fetch_address_response
 from delty.actions.initiate_element_crawling import initiate_element_crawling
