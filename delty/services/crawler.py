@@ -9,7 +9,11 @@ from django.db import transaction
 from requests import Response, HTTPError
 
 from delty.clients.web_client import WebClient
-from delty.errors import WebPageUnreachable, CrawlingJobAlreadyExists
+from delty.errors import (
+    WebPageUnreachable,
+    CrawlingJobAlreadyExists,
+    CssSelectorHtmlElementNotFound,
+)
 from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
 from delty.services.dom_processor import DomProcessor
 from delty.utils import compute_sha256
@@ -52,10 +56,13 @@ class CrawlerService:
         Raises:
             WebPageUnreachable: If all elements in the response iterator are False.
         """
-        response_iterator = WebClient().get_response(url, True)
-        if all(False for _ in response_iterator):
-            raise WebPageUnreachable(meta={"url": url})
-        return True
+        try:
+            response_iterator = WebClient().get_response(url, True)
+            if any(response_iterator):
+                return True
+        except HTTPError:
+            pass
+        raise WebPageUnreachable(meta={"url": url})
 
     def get_selected_element_content(self, page_html: str, css_selector: str) -> str:
         # create a new bs4 object from the html
@@ -66,8 +73,13 @@ class CrawlerService:
 
         css_selector = DomProcessor.escape_css_selector(css_selector=css_selector)
 
+        if not (css_selector_html_element := soup.select(css_selector)):
+            raise CssSelectorHtmlElementNotFound(
+                meta={"css_selector": css_selector, "page_html": page_html}
+            )
+
         # return the selected element
-        return str(soup.select(css_selector)[0])
+        return str(css_selector_html_element[0])
 
     def get_diff(self, base_html_lines: str, new_html_lines: str) -> Iterator[str]:
         base_lines = base_html_lines.splitlines()
