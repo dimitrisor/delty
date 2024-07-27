@@ -5,12 +5,10 @@ from typing import Iterator
 import boto3
 from django.conf import settings
 from bs4 import BeautifulSoup
-from django.core.cache import cache
 from django.db import transaction
-from requests import Response
+from requests import Response, HTTPError
 
 from delty.clients.web_client import WebClient
-from delty.constants import CACHE_ADDRESS_TEXT, CACHE_ADDRESS_CONTENT_TYPE
 from delty.errors import WebPageUnreachable, CrawlingJobAlreadyExists
 from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
 from delty.services.dom_processor import DomProcessor
@@ -29,32 +27,13 @@ class CrawlerService:
     def __init__(self):
         self.parser_cls = BeautifulSoup
 
-    def fetch_response(
-        self, url: str, check_crawlability: bool = False
-    ) -> tuple[str, str]:
-        if content := cache.get(CACHE_ADDRESS_TEXT.format(url)):
-            content_type = cache.get(CACHE_ADDRESS_CONTENT_TYPE.format(url))
-        else:
-            response = WebClient().get_response(url, check_crawlability)
-            assert isinstance(response, Response)
-
-            content = DomProcessor.convert_relative_to_absolute(
-                base_url=url, html_content=response.text
-            )
-
-            content_type = response.headers.get("Content-Type")
-            cache.set(
-                CACHE_ADDRESS_TEXT.format(url),
-                content,
-                timeout=60 * 5,
-            )
-            cache.set(
-                CACHE_ADDRESS_CONTENT_TYPE.format(url),
-                content_type,
-                timeout=60 * 5,
-            )
-
-        return content, content_type
+    def fetch_response(self, url: str) -> Response:
+        try:
+            response = WebClient().get_response(url)
+        except HTTPError:
+            raise WebPageUnreachable(meta={"url": url})
+        assert isinstance(response, Response)
+        return response
 
     def is_address_crawlable(self, url: str) -> bool:
         """

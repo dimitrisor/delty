@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 
+from delty.actions.common import fetch_response
 from delty.models import CrawlingJob
 from delty.services.crawler import CrawlerService
 
@@ -12,7 +13,7 @@ class TrackDifference:
         selected_element = crawling_job.selected_element
         base_selected_element_content = selected_element.content
 
-        new_page_html, content_type = self.crawler.fetch_response(url)
+        new_page_html, content_type = fetch_response(url)
         new_selected_element_content = self.crawler.get_selected_element_content(
             new_page_html, selected_element.selector
         )
