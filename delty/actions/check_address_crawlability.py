@@ -12,6 +12,10 @@ class CheckAddressCrawlability:
     def execute(self, actor: User, url: str):
         try:
             CrawlerService().is_address_crawlable(url)
+            logger.info(
+                msg="Successfully checked address crawlability.",
+                extra={"url": url, "actor": actor.id},
+            )
         except ServiceException as e:
             logger.error(
                 msg="Failed to check address crawlability.",

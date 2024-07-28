@@ -21,19 +21,24 @@ class UrlAddress(BaseModel):
 
 class PageSnapshot(BaseModel):
     address = models.ForeignKey(
-        UrlAddress, on_delete=DO_NOTHING, related_name="snapshots"
+        UrlAddress, on_delete=DO_NOTHING, related_name="page_snapshots"
     )
     hash = models.CharField(max_length=64)
 
 
-class SelectedElement(BaseModel):
-    snapshot = models.ForeignKey(PageSnapshot, on_delete=models.CASCADE)
+class ElementSnapshot(BaseModel):
+    page_snapshot = models.ForeignKey(PageSnapshot, on_delete=models.CASCADE)
+    selector = models.TextField()
     content = models.TextField()
     hash = models.CharField(max_length=64)
-    selector = models.TextField()
+    diff = models.TextField(null=True, default=None)
+    version = models.IntegerField(default=1)
 
     class Meta:
-        unique_together = ("snapshot", "hash")
+        unique_together = (
+            ("page_snapshot", "selector", "hash"),
+            ("page_snapshot", "selector", "version"),
+        )
 
 
 class CrawlingJob(BaseModel):
@@ -44,7 +49,9 @@ class CrawlingJob(BaseModel):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     url_address = models.ForeignKey(UrlAddress, on_delete=models.CASCADE)
-    selected_element = models.ForeignKey(SelectedElement, on_delete=models.CASCADE)
+    latest_element_snapshot = models.ForeignKey(
+        ElementSnapshot, on_delete=models.CASCADE
+    )
     status = models.CharField(
         max_length=255, choices=Status.choices, default=Status.ACTIVE
     )
