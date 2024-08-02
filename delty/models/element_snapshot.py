@@ -5,6 +5,9 @@ from delty.models import BaseModel, PageSnapshot
 
 class ElementSnapshot(BaseModel):
     page_snapshot = models.ForeignKey(PageSnapshot, on_delete=models.CASCADE)
+    crawling_job = models.ForeignKey(
+        "CrawlingJob", on_delete=models.CASCADE, related_name="element_snapshots"
+    )
     selector = models.TextField()
     content = models.TextField()
     hash = models.CharField(max_length=64)
