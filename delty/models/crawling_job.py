@@ -12,8 +12,9 @@ class CrawlingJob(BaseModel):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     url_address = models.ForeignKey(UrlAddress, on_delete=models.CASCADE)
+    selector = models.TextField()
     latest_element_snapshot = models.ForeignKey(
-        ElementSnapshot, on_delete=models.CASCADE
+        ElementSnapshot, on_delete=models.DO_NOTHING, null=True
     )
     status = models.CharField(
         max_length=255, choices=Status.choices, default=Status.ACTIVE
