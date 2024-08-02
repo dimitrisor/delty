@@ -1,5 +1,6 @@
 import logging
 
+from bs4 import BeautifulSoup
 from django.contrib.auth.models import User
 
 from delty.actions.common import fetch_response
@@ -25,20 +26,28 @@ class TrackDifference:
             new_element_content = self.crawler.get_selected_element_content(
                 new_page_html, css_selector
             )
+            new_element_content_hash = compute_sha256(new_element_content)
 
             # Compare the base_element_content with the new_element_content
             # and store the difference in the database
-            if diff := self.crawler.get_diff(base_element_content, new_element_content):
+            if base_element_snapshot.hash != new_element_content_hash:
+                BeautifulSoup(base_element_content, "html.parser").prettify()
+                BeautifulSoup(new_element_content, "html.parser").prettify()
+
+                diff = self.crawler.get_diff(
+                    str(base_element_content), str(new_element_content)
+                )
                 new_page_snapshot = PageSnapshot.objects.create(
                     address=crawling_job.url_address, hash=compute_sha256(new_page_html)
                 )
                 new_element_snapshot = ElementSnapshot.objects.create(
                     page_snapshot=new_page_snapshot,
+                    crawling_job=crawling_job,
                     content=new_element_content,
-                    hash=compute_sha256(new_element_content),
+                    hash=new_element_content_hash,
                     selector=css_selector,
                     diff=diff,
-                    version=crawling_job.version + 1,
+                    version=crawling_job.latest_element_snapshot.version + 1,
                 )
                 crawling_job.latest_element_snapshot = new_element_snapshot
                 crawling_job.save()
@@ -68,3 +77,6 @@ class TrackDifference:
                 },
             )
             raise e
+
+
+track_difference = TrackDifference()
