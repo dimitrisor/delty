@@ -126,6 +126,7 @@ class CrawlerService:
                 id=crawling_job_id,
                 user=user,
                 url_address=address,
+                selector=element_selector,
                 latest_element_snapshot=selected_element,
                 status=CrawlingJob.Status.ACTIVE,
             )
