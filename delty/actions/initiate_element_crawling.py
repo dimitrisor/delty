@@ -16,19 +16,27 @@ class CrawlingJobDto:
 
 
 class InitiateElementCrawling:
-    crawler = CrawlerService()
+    crawler_service = CrawlerService()
 
     def execute(self, actor: User, url: str, element_selector: str) -> CrawlingJobDto:
         try:
             content, _ = fetch_response(url)
-            selected_element_content = self.crawler.get_selected_element_content(
-                content, element_selector
+            selected_element_content = (
+                self.crawler_service.get_selected_element_content(
+                    content, element_selector
+                )
             )
-            crawling_job = self.crawler.create_crawling_job(
+            crawling_job = self.crawler_service.create_crawling_job(
                 actor, url, element_selector, content, selected_element_content
             )
             logger.info(
-                msg="Successfully fetched address response.", extra={"url": url}
+                msg="Successfully initiated a crawling job.",
+                extra={
+                    "url": url,
+                    "element_selector": element_selector,
+                    "actor": actor.id,
+                    "crawling_job": crawling_job.id,
+                },
             )
             return CrawlingJobDto(crawling_job.id)
         except ServiceException as e:
