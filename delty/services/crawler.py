@@ -92,13 +92,11 @@ class CrawlerService:
     ):
         with transaction.atomic():
             page_html_hash = compute_sha256(page_html)
-            selected_element_hash = compute_sha256(selected_element_content)
 
             if CrawlingJob.objects.filter(
                 user=user,
                 url_address__url=url,
-                url_address__page_snapshots__hash=page_html_hash,
-                latest_element_snapshot__hash=selected_element_hash,
+                selector=element_selector,
                 status=CrawlingJob.Status.ACTIVE,
             ).exists():
                 raise CrawlingJobAlreadyExists()
@@ -113,7 +111,7 @@ class CrawlerService:
             selected_element, created = ElementSnapshot.objects.get_or_create(
                 page_snapshot=snapshot,
                 selector=element_selector,
-                hash=selected_element_hash,
+                hash=compute_sha256(selected_element_content),
                 defaults={
                     "content": selected_element_content,
                     "crawling_job_id": crawling_job_id,
