@@ -27,7 +27,7 @@ class RenderURLView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         try:
             url = request.GET.get("url")
-            text, content_type = fetch_address_response.execute(url)
+            text, content_type = fetch_address_response.execute(request.user, url)
             return HttpResponse(text, content_type=content_type)
         except WebPageUnreachable as e:
             return HttpResponse(e.detail, status=e.status_code)

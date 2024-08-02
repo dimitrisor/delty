@@ -27,6 +27,9 @@ class InitiateElementCrawling:
             crawling_job = self.crawler.create_crawling_job(
                 actor, url, element_selector, content, selected_element_content
             )
+            logger.info(
+                msg="Successfully fetched address response.", extra={"url": url}
+            )
             return CrawlingJobDto(crawling_job.id)
         except ServiceException as e:
             logger.error(

@@ -1,4 +1,5 @@
 import difflib
+import uuid
 from io import BytesIO
 from typing import Iterator
 
@@ -14,7 +15,7 @@ from delty.errors import (
     CrawlingJobAlreadyExists,
     CssSelectorHtmlElementNotFound,
 )
-from delty.models import SelectedElement, UrlAddress, PageSnapshot, CrawlingJob
+from delty.models import ElementSnapshot, UrlAddress, PageSnapshot, CrawlingJob
 from delty.services.dom_processor import DomProcessor
 from delty.utils import compute_sha256
 
@@ -96,8 +97,8 @@ class CrawlerService:
             if CrawlingJob.objects.filter(
                 user=user,
                 url_address__url=url,
-                url_address__snapshots__hash=page_html_hash,
-                selected_element__hash=selected_element_hash,
+                url_address__page_snapshots__hash=page_html_hash,
+                latest_element_snapshot__hash=selected_element_hash,
                 status=CrawlingJob.Status.ACTIVE,
             ).exists():
                 raise CrawlingJobAlreadyExists()
@@ -108,11 +109,15 @@ class CrawlerService:
                 hash=page_html_hash,
                 # defaults={"content": page_html},
             )
-            selected_element, created = SelectedElement.objects.get_or_create(
-                snapshot=snapshot,
+            crawling_job_id = uuid.uuid4()
+            selected_element, created = ElementSnapshot.objects.get_or_create(
+                page_snapshot=snapshot,
                 selector=element_selector,
                 hash=selected_element_hash,
-                defaults={"content": selected_element_content},
+                defaults={
+                    "content": selected_element_content,
+                    "crawling_job_id": crawling_job_id,
+                },
             )
             if created:
                 self.store_selected_element_content(
@@ -120,11 +125,15 @@ class CrawlerService:
                     content=selected_element_content,
                 )
             crawling_job = CrawlingJob.objects.create(
+                id=crawling_job_id,
                 user=user,
                 url_address=address,
-                selected_element=selected_element,
+                latest_element_snapshot=selected_element,
                 status=CrawlingJob.Status.ACTIVE,
             )
+
+            snapshot.crawling_job = crawling_job
+            snapshot.save()
 
         return crawling_job
 
