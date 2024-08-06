@@ -1,5 +1,29 @@
 # delty
 
+## Local Installation
+
+### Requirements
+
+1. Complete the numan-development
+   [quick-start](https://github.com/BeaNuman/numan-development#quickstart) guide, until
+   the docker provision.
+2. Install [pyenv](https://github.com/pyenv/pyenv-installer) to manage python versions
+   on your local machine.
+
+### Setup
+
+These commands will install python, a virtual environment for the monolith app, install
+all dependencies and ensure poetry loads environment variables from .env files.
+
+```console
+$ pyenv install 3.10.5
+$ pyenv local 3.10.5
+$ pip install poetry
+$ poetry install
+$ poetry self add poetry-dotenv-plugin
+```
+
+### Release plan
 1st version
 
 1. The user logs in
