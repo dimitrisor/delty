@@ -18,3 +18,5 @@ DRAMATIQ_BROKER = {
         "django_dramatiq.middleware.AdminMiddleware",
     ],
 }
+
+DELTY_FILE_STORAGE = "delty.tests.utils.TempFileSystemStorage"

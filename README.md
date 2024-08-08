@@ -24,6 +24,7 @@ $ poetry self add poetry-dotenv-plugin
 ```
 
 ### Release plan
+
 1st version
 
 1. The user logs in

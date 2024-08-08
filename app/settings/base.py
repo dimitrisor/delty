@@ -14,7 +14,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "debug_toolbar",
+    "storages",
     "delty",
 ]
 
@@ -138,13 +138,18 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 DATABASES = {
-    "default": dj_database_url.config(
-        default="postgres://postgres:postgres@localhost:5432/delty",
-        conn_max_age=600,
-    )
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "delty",
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "localhost",
+        "PORT": "5432",
+        "CONN_MAX_AGE": 600,
+    }
 }
 
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+DELTY_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 from .extras.s3 import *  # noqa
 from .extras.logging import *  # noqa
