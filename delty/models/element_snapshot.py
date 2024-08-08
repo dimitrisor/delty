@@ -13,6 +13,7 @@ class ElementSnapshot(BaseModel):
     hash = models.CharField(max_length=64)
     diff = models.TextField(null=True, default=None)
     version = models.IntegerField(default=1)
+    content_path = models.TextField(default="")
 
     class Meta:
         unique_together = (
