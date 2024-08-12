@@ -5,17 +5,17 @@ from django.views.generic import TemplateView
 
 from delty.actions.check_address_crawlability import check_address_crawlability
 from delty.exceptions import ServiceException
-from delty.forms.adress import AddressForm
+from delty.forms.crawling_submission import CrawlingSubmissionForm
 from delty.views.mixins import LoginRequiredMixin
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
-        form = AddressForm()
+        form = CrawlingSubmissionForm()
         return render(request, "index.html", {"form": form})
 
     def post(self, request, *args, **kwargs):
-        form = AddressForm(request.POST)
+        form = CrawlingSubmissionForm(request.POST)
         context = {"form": form}
         if form.is_valid():
             try:

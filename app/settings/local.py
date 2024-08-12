@@ -12,8 +12,3 @@ AWS_STORAGE_BUCKET_NAME = env.get_str(
 )
 AWS_S3_ENDPOINT_URL = env.get_str("AWS_S3_HOST", "http://localhost:4566")
 AWS_S3_REGION_NAME = env.get_str("AWS_S3_REGION_NAME", "us-east-1")
-# AWS_S3_CUSTOM_DOMAIN = env.get_str(
-#     "AWS_S3_CUSTOM_DOMAIN", f"localhost:4566/{AWS_STORAGE_BUCKET_NAME}"
-# )
-# AWS_S3_FILE_OVERWRITE = env.get_bool("AWS_S3_FILE_OVERWRITE", False)
-# AWS_DEFAULT_ACL = None
