@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.views.generic import View
 
 from delty.errors import WebPageUnreachable
@@ -11,6 +11,15 @@ from delty.views.mixins import LoginRequiredMixin
 
 
 class CrawlerView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        form = CrawlingSubmissionForm()
+        print(request.GET.get("rendering_url"))
+        return render(
+            request,
+            "crawling.html",
+            {"form": form, "rendering_url": request.GET.get("rendering_url")},
+        )
+
     def post(self, request, *args, **kwargs):
         form = CrawlingSubmissionForm(request.POST)
         if form.is_valid():
