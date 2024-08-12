@@ -10,7 +10,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", IndexView.as_view(), name="index"),
     path("render_url", RenderURLView.as_view(), name="render_url"),
-    path("initiate_crawilng", CrawlerView.as_view(), name="initiate_crawilng"),
+    path("initiate_crawling", CrawlerView.as_view(), name="initiate_crawling"),
     path("register", register, name="register"),
     path("login", login, name="login"),
 ]

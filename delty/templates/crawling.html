@@ -1,0 +1,113 @@
+{% load static %}
+{% load crispy_forms_tags %}
+<link rel="stylesheet" href="{% static 'delty/css/inspector.css' %}">
+<body>
+    <div class="container text-center">
+        <div class="row justify-content-md-center">
+            <div class="col col-md-10">
+                <h1>Enter a URL to Crawl</h1>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <div class="col col-md-10">
+                <form method="post" id="crawling_submission">
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <div class="col col-md-10">
+                <div id="iframeContainer">
+                    <iframe id="contentFrame" src="{{ rendering_url }}" style="width: 100%; height: 1000px;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('contentFrame').addEventListener('load', function() {
+            const iframe = document.getElementById('contentFrame');
+            const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+
+            let overlay = iframeDocument.createElement('div');
+            overlay.className = 'highlight-overlay';
+            iframeDocument.documentElement.appendChild(overlay);
+            iframeDocument.addEventListener('mouseover', (e) => {
+                let target = e.target;
+                if (target !== iframeDocument && target !== overlay) {
+                    let rect = target.getBoundingClientRect();
+                    overlay.style.width = `${rect.width}px`;
+                    overlay.style.height = `${rect.height}px`;
+                    overlay.style.top = `${window.scrollY + rect.top}px`;
+                    overlay.style.left = `${window.scrollX + rect.left}px`;
+                    overlay.style.display = 'block';
+                    overlay.style.position = 'absolute';
+                    overlay.style.border = '2px solid #ff9800';
+                    overlay.style.pointerEvents = 'none';
+                    overlay.style.zIndex = 9999;
+
+                }
+            });
+            iframeDocument.addEventListener('mouseout', (e) => {
+                overlay.style.display = 'none';
+            });
+
+            iframeDocument.addEventListener('click', function(event) {
+                const element = event.target;
+                const selector = generateCssSelector(element);
+                console.log(selector);
+
+                const element_selector = document.getElementById('id_element_selector');
+                element_selector.setAttribute('value', selector);
+
+                const crawlButton = document.getElementById('id_crawl');
+                crawlButton.classList.remove('disabled');
+
+                // alert("'" + selector + "' Has just been selected.");
+                event.preventDefault();
+                event.stopPropagation();
+            });
+        });
+
+        function generateCssSelector(element) {
+            if (element.tagName.toLowerCase() === 'html')
+                return 'html';
+            let str = element.tagName.toLowerCase();
+            if (element.id) {
+                str += '#' + element.id;
+                return str;
+            }
+            if (element.className) {
+                let className = element.className.replace(/\s?$/,'')
+                str += '.' + className.split(' ').join('.');
+            }
+            const parent = element.parentNode;
+            if (parent) {
+                str = generateCssSelector(parent) + ' > ' + str;
+            }
+            return str;
+        }
+
+
+        document.getElementById('crawling_submission').addEventListener('submit', function (event) {
+            // Capture iframe dimensions
+            var iframe = document.getElementById('contentFrame');
+            var iframeWidthField = document.querySelector('[name="iframe_width"]');
+            var iframeHeightField = document.querySelector('[name="iframe_height"]');
+
+            // Ensure the hidden fields exist
+            if (iframeWidthField && iframeHeightField) {
+                // Set iframe dimensions
+                iframeWidthField.value = iframe.clientWidth;
+                iframeHeightField.value = iframe.clientHeight;
+
+                console.log('Form submitted');
+            } else {
+                console.error('Hidden fields iframe_width or iframe_height are missing in the DOM.');
+            }
+        });
+    </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
+</body>
