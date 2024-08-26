@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from delty.actions.common import fetch_response
+from delty.actions.common.fetch_response import fetch_response_fully_loaded
 from delty.errors import CrawlingJobAlreadyExists
 from delty.exceptions import ServiceException
 from delty.models import CrawlingJob, UrlAddress, PageSnapshot, ElementSnapshot
@@ -25,9 +25,19 @@ class InitiateElementCrawling:
     crawler_service = CrawlerService()
     s3_service = StorageService()
 
-    def execute(self, actor: User, url: str, element_selector: str) -> CrawlingJobDto:
+    def execute(
+        self,
+        actor: User,
+        url: str,
+        element_selector: str,
+        iframe_width: int,
+        iframe_height: int,
+        user_agent: str,
+    ) -> CrawlingJobDto:
         try:
-            content_html, _ = fetch_response(url)
+            content_html, _ = fetch_response_fully_loaded(
+                url, iframe_width, iframe_height, user_agent
+            )
             selected_element_content = (
                 self.crawler_service.get_selected_element_content(
                     content_html, element_selector
@@ -68,8 +78,11 @@ class InitiateElementCrawling:
                     id=crawling_job_id,
                     user=actor,
                     url_address=address,
-                    selector=element_selector,
                     latest_element_snapshot=selected_element,
+                    selector=element_selector,
+                    iframe_width=iframe_width,
+                    iframe_height=iframe_height,
+                    user_agent=user_agent,
                     status=CrawlingJob.Status.ACTIVE,
                 )
 

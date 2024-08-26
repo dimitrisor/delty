@@ -3,7 +3,7 @@ import logging
 from bs4 import BeautifulSoup
 from django.contrib.auth.models import User
 
-from delty.actions.common import fetch_response
+from delty.actions.common.fetch_response import fetch_response_fully_loaded
 from delty.exceptions import ServiceException
 from delty.models import CrawlingJob, PageSnapshot, ElementSnapshot
 from delty.services.crawler import CrawlerService
@@ -19,9 +19,15 @@ class TrackDifference:
         try:
             url = crawling_job.url_address.url
             base_element_snapshot = crawling_job.latest_element_snapshot
-            base_element_content = base_element_snapshot.content
+            base_element_snapshot_content = base_element_snapshot.content
             css_selector = base_element_snapshot.selector
-            new_page_html, content_type = fetch_response(url)
+
+            new_page_html, content_type = fetch_response_fully_loaded(
+                url,
+                crawling_job.iframe_width,
+                crawling_job.iframe_height,
+                crawling_job.user_agent,
+            )
 
             new_element_content = self.crawler.get_selected_element_content(
                 new_page_html, css_selector
@@ -31,11 +37,11 @@ class TrackDifference:
             # Compare the base_element_content with the new_element_content
             # and store the difference in the database
             if base_element_snapshot.hash != new_element_content_hash:
-                BeautifulSoup(base_element_content, "html.parser").prettify()
+                BeautifulSoup(base_element_snapshot_content, "html.parser").prettify()
                 BeautifulSoup(new_element_content, "html.parser").prettify()
 
                 diff = self.crawler.get_diff(
-                    str(base_element_content), str(new_element_content)
+                    str(base_element_snapshot_content), str(new_element_content)
                 )
                 new_page_snapshot = PageSnapshot.objects.create(
                     address=crawling_job.url_address, hash=compute_sha256(new_page_html)
