@@ -2,7 +2,7 @@ from unittest import mock
 
 import django.test
 
-from delty.actions.track_difference import TrackDifference
+from delty.actions.track_difference import track_difference
 from delty.tests.factories.crawling_job import CrawlingJobFactory
 from delty.tests.factories.element_snapshot import ElementSnapshotFactory
 from delty.tests.factories.user import UserFactory
@@ -18,5 +18,5 @@ class TrackDifferenceTests(django.test.TestCase):
         UserFactory()
         cj = CrawlingJobFactory()
         ElementSnapshotFactory(content="<html><body><h1>Test2</h1></body></html>")
-        TrackDifference().execute(cj.user, cj)
+        track_difference.execute(cj.user, cj)
         pass

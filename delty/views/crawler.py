@@ -26,7 +26,17 @@ class CrawlerView(LoginRequiredMixin, View):
             try:
                 url = form.cleaned_data["url"]
                 element_selector = form.cleaned_data["element_selector"]
-                initiate_element_crawling.execute(request.user, url, element_selector)
+                iframe_width = form.cleaned_data["iframe_width"]
+                iframe_height = form.cleaned_data["iframe_height"]
+                user_agent = request.META.get("HTTP_USER_AGENT", "")
+                initiate_element_crawling.execute(
+                    request.user,
+                    url,
+                    element_selector,
+                    iframe_width,
+                    iframe_height,
+                    user_agent,
+                )
             except ServiceException as e:
                 form.add_error("url", str(e.detail))
         return redirect("index")
