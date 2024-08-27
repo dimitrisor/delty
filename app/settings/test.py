@@ -1,9 +1,12 @@
+ENVIRONMENT = "test"
+from app.settings.base import INSTALLED_APPS  # noqa
 from app.settings.base import *  # noqa
 
-
 DEBUG = False
-ENVIRONMENT = "test"
 STATICFILES_STORAGE = ""
+
+if "debug_toolbar" in INSTALLED_APPS:
+    INSTALLED_APPS.remove("debug_toolbar")
 
 DRAMATIQ_BROKER = {
     "BROKER": "dramatiq.brokers.stub.StubBroker",
