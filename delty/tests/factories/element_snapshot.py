@@ -1,16 +1,18 @@
 import factory.fuzzy
 
-from delty.models import UrlAddress
-from delty.utils import compute_sha256
+from delty.models import ElementSnapshot
+from delty.tests.factories.page_snapshot import PageSnapshotFactory
 
 
 class ElementSnapshotFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = UrlAddress
+        model = ElementSnapshot
 
-    page_snapshot = None
-    selector = "div > .list_a"
-    content = "<div><ul><li>hi John</li><li>hi Doe</li></ul></div>"
-    hash = compute_sha256(content)
+    page_snapshot = factory.SubFactory(PageSnapshotFactory)
+    crawling_job = None
+    selector = "body > .list_a"
+    content = "<ul><li>hi John</li><li>hi Doe</li></ul>"
+    hash = factory.Faker("md5")
     diff = None
     version = 1
+    content_path = factory.Faker("url")
