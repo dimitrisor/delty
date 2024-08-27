@@ -14,9 +14,9 @@ class ElementSnapshot(BaseModel):
         default=None,
     )
     selector = models.TextField()
-    content = models.TextField()
+    # content = models.TextField()
     hash = models.CharField(max_length=64)
-    diff = models.TextField(null=True, default=None)
+    # diff = models.TextField(null=True, default=None)
     version = models.IntegerField(default=1)
     content_path = models.TextField(default="")
 

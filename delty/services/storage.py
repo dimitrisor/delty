@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 
+from delty.errors import S3ContentStoringFailed
+
 
 def get_storage_class(import_path: str | None = None) -> Storage:
     return import_string(import_path or settings.DELTY_FILE_STORAGE)
@@ -33,7 +35,9 @@ class StorageService:
             delty_storage.querystring_auth = False
             return delty_storage.url(file_path)  # type: ignore
         except Exception as exc:
-            raise exc
+            raise S3ContentStoringFailed(
+                meta={"file_path": file_path, "exception": str(exc)}
+            )
 
     @classmethod
     def generate_file_path(cls, element_hash: str) -> str:
