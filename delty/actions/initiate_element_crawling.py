@@ -74,6 +74,7 @@ class InitiateElementCrawling:
                     element_content_path = self.s3_service.upload_message(
                         selected_element_content, selected_element.hash
                     )
+                    selected_element.content_path = element_content_path
                 crawling_job = CrawlingJob.objects.create(
                     id=crawling_job_id,
                     user=actor,
@@ -85,8 +86,6 @@ class InitiateElementCrawling:
                     user_agent=user_agent,
                     status=CrawlingJob.Status.ACTIVE,
                 )
-
-                selected_element.content_path = element_content_path
                 selected_element.crawling_job = crawling_job
                 selected_element.save()
 
