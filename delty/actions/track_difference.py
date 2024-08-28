@@ -1,9 +1,10 @@
 import logging
 
-from bs4 import BeautifulSoup
+import dramatiq
 from django.contrib.auth.models import User
 
 from delty.actions.common.fetch_response import fetch_response_fully_loaded
+from delty.errors import ActorNotFound, CrawlingJobNotFound
 from delty.exceptions import ServiceException
 from delty.models import CrawlingJob, PageSnapshot, ElementSnapshot
 from delty.services.crawler import CrawlerService
@@ -14,14 +15,22 @@ logger = logging.getLogger(__name__)
 
 
 class TrackDifference:
-    crawler = CrawlerService()
-    s3_service = StorageService()
+    @staticmethod
+    @dramatiq.actor(max_retries=10, actor_name="process_track_content_difference")
+    def execute(actor_id: int, crawling_job_id: str):
+        dramatiq.get_broker().logger.info("Message to be logged in the broker")
 
-    def execute(self, actor: User, crawling_job: CrawlingJob):
+        if not (actor := User.objects.get(id=actor_id)):
+            raise ActorNotFound(meta={"actor_id": actor_id})
+
+        if not (crawling_job := CrawlingJob.objects.get(id=crawling_job_id)):
+            raise CrawlingJobNotFound(meta={"crawling_job_id": crawling_job_id})
+
+        crawler = CrawlerService()
+        s3_service = StorageService()
         try:
             url = crawling_job.url_address.url
             base_element_snapshot = crawling_job.latest_element_snapshot
-            base_element_snapshot_content = base_element_snapshot.content
             css_selector = base_element_snapshot.selector
 
             new_page_html, content_type = fetch_response_fully_loaded(
@@ -31,7 +40,7 @@ class TrackDifference:
                 crawling_job.user_agent,
             )
 
-            new_element_content = self.crawler.get_selected_element_content(
+            new_element_content = crawler.get_selected_element_content(
                 new_page_html, css_selector
             )
             new_element_content_hash = compute_sha256(new_element_content)
@@ -40,32 +49,21 @@ class TrackDifference:
             # Compare the base_element_content with the new_element_content
             # and store the difference in the database
             if base_element_snapshot.hash != new_element_content_hash:
-                BeautifulSoup(base_element_snapshot_content, "html.parser").prettify()
-                BeautifulSoup(new_element_content, "html.parser").prettify()
-
-                diff = "\n".join(
-                    self.crawler.get_diff(
-                        str(base_element_snapshot_content), str(new_element_content)
-                    )
-                )
                 new_page_snapshot = PageSnapshot.objects.create(
                     address=crawling_job.url_address, hash=compute_sha256(new_page_html)
                 )
-                element_content_path = self.s3_service.upload_message(
+                element_content_path = s3_service.upload_message(
                     new_element_content, new_element_content_hash
                 )
                 new_element_snapshot = ElementSnapshot.objects.create(
                     page_snapshot=new_page_snapshot,
                     crawling_job=crawling_job,
-                    content=new_element_content,
                     hash=new_element_content_hash,
                     selector=css_selector,
-                    diff=diff,
                     version=crawling_job.latest_element_snapshot.version + 1,
                     content_path=element_content_path,
                 )
                 crawling_job.latest_element_snapshot = new_element_snapshot
-                # crawling_job.status = CrawlingJob.Status.STOPPED
                 crawling_job.save()
                 logger.info(
                     msg="Difference in htmls found.",
@@ -96,6 +94,3 @@ class TrackDifference:
                 },
             )
             raise e
-
-
-track_difference = TrackDifference()

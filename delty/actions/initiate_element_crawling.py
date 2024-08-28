@@ -53,7 +53,13 @@ class InitiateElementCrawling:
                     selector=element_selector,
                     status=CrawlingJob.Status.ACTIVE,
                 ).exists():
-                    raise CrawlingJobAlreadyExists()
+                    raise CrawlingJobAlreadyExists(
+                        meta={
+                            "user": actor,
+                            "url_address": url,
+                            "selector": element_selector,
+                        }
+                    )
 
                 address, _ = UrlAddress.objects.get_or_create(url=url)
                 snapshot, _ = PageSnapshot.objects.get_or_create(
@@ -66,7 +72,6 @@ class InitiateElementCrawling:
                     selector=element_selector,
                     hash=compute_sha256(selected_element_content),
                     defaults={
-                        "content": selected_element_content,
                         "crawling_job_id": crawling_job_id,
                     },
                 )

@@ -2,7 +2,7 @@ from unittest import mock
 
 import django.test
 
-from delty.actions.track_difference import track_difference
+from delty.tasks import TrackDifference
 from delty.models import ElementSnapshot
 from delty.tests.factories.crawling_job import CrawlingJobFactory
 from delty.tests.factories.element_snapshot import ElementSnapshotFactory
@@ -35,7 +35,6 @@ class TrackDifferenceTests(django.test.TestCase):
         )
         element_snapshot = ElementSnapshotFactory(
             page_snapshot=page_snapshot,
-            content=init_element_content,
             hash=compute_sha256(init_element_content),
         )
         crawling_job = CrawlingJobFactory(
@@ -43,12 +42,14 @@ class TrackDifferenceTests(django.test.TestCase):
         )
         crawling_job.element_snapshots.add(element_snapshot)
 
-        track_difference.execute(crawling_job.user, crawling_job)
+        expected_new_element_snapshot_hash = compute_sha256(
+            '<div class="list_a"><ul><li>hi John</li><li>hi ' "Doe</li></ul></div>"
+        )
+
+        TrackDifference.execute(crawling_job.user.id, str(crawling_job.id))
 
         new_element_snapshot = ElementSnapshot.objects.order_by("-version").first()
+        crawling_job.refresh_from_db()
 
         self.assertEqual(crawling_job.latest_element_snapshot, new_element_snapshot)
-        self.assertEqual(
-            new_element_snapshot.content,
-            '<div class="list_a"><ul><li>hi John</li><li>hi Doe</li></ul></div>',
-        )
+        self.assertEqual(new_element_snapshot.hash, expected_new_element_snapshot_hash)

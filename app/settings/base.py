@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     "debug_toolbar",
     "storages",
+    "django_dramatiq",
 ]
 
 MIDDLEWARE = [
@@ -154,3 +155,4 @@ DELTY_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 from .extras.s3 import *  # noqa
 from .extras.logging import *  # noqa
+from .extras.dramatiq import *  # noqa
