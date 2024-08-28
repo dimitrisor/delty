@@ -2,9 +2,10 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from delty.actions.track_difference import track_difference
+from delty.tasks import TrackDifference
 from delty.models import CrawlingJob
 
+# dramatiq.set_broker("redis://localhost:6379")
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +16,6 @@ class Command(BaseCommand):
         for crawling_job in CrawlingJob.objects.filter(
             status=CrawlingJob.Status.ACTIVE
         ):
-            track_difference.execute(crawling_job.user, crawling_job)
+            TrackDifference.execute.send(crawling_job.user.id, str(crawling_job.id))
 
         logger.info(msg="All active crawling jobs have successfully ran.")

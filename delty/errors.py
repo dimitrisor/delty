@@ -33,3 +33,13 @@ class CrawlingJobAlreadyExists(ValidationException):
 class S3ContentStoringFailed(ValidationException):
     default_detail = "Failed to store element content to S3."
     default_code = 6008
+
+
+class ActorNotFound(ValidationException):
+    default_detail = "Actor not found."
+    default_code = 6009
+
+
+class CrawlingJobNotFound(ValidationException):
+    default_detail = "Crawling job not found."
+    default_code = 6010
