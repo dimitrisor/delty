@@ -10,7 +10,7 @@
 2. Install [pyenv](https://github.com/pyenv/pyenv-installer) to manage python versions
    on your local machine.
 
-### Setup
+## Setup
 
 These commands will install python, a virtual environment for the monolith app, install
 all dependencies and ensure poetry loads environment variables from .env files.
@@ -23,7 +23,7 @@ $ poetry install
 $ poetry self add poetry-dotenv-plugin
 ```
 
-### Release plan
+## Functionality
 
 1st version
 
@@ -33,3 +33,12 @@ $ poetry self add poetry-dotenv-plugin
 4. The user now selects the set of elements that needs to be observed
 5. The app now observes the elements and logs the changes to the console
 6. Set a finite lifespan to cron jobs
+
+## Useful commands
+
+### Localstack:
+
+- List buckets -> `awslocal s3api list-buckets`
+- List objects of bucket ->
+  `awslocal s3api list-objects --bucket selected-element-html-s3-bucket`
+- Create bucket -> `awslocal s3 mb s3://selected-element-html-s3-bucket`
