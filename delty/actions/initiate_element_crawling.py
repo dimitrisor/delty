@@ -43,7 +43,6 @@ class InitiateElementCrawling:
                     content_html, element_selector
                 )
             )
-
             with transaction.atomic():
                 page_html_hash = compute_sha256(content_html)
 

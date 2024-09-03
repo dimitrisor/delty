@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
@@ -5,7 +7,8 @@ from django.utils import timezone
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 
-from delty.errors import S3ContentStoringFailed
+
+logger = logging.getLogger(__name__)
 
 
 def get_storage_class(import_path: str | None = None) -> Storage:
@@ -31,13 +34,17 @@ class StorageService:
             file_path = self.generate_file_path(hash)
             content_file = ContentFile(content.encode())
             delty_storage.save(file_path, content_file)  # type: ignore
-            # This is used in order to remove authentication from the URL
+            # Used to remove authentication from the URL
             delty_storage.querystring_auth = False
             return delty_storage.url(file_path)  # type: ignore
         except Exception as exc:
-            raise S3ContentStoringFailed(
-                meta={"file_path": file_path, "exception": str(exc)}
+            logger.error(
+                msg="Failed to store element content to S3.",
+                extra={
+                    "file_path": file_path,
+                },
             )
+            raise exc
 
     @classmethod
     def generate_file_path(cls, element_hash: str) -> str:
