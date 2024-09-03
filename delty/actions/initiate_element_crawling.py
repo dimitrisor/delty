@@ -110,6 +110,7 @@ class InitiateElementCrawling:
                     "url": url,
                     "element_selector": element_selector,
                     "actor": actor.id,
+                    "error": str(e),
                 },
             )
             raise e

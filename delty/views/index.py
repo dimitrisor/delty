@@ -27,4 +27,4 @@ class IndexView(LoginRequiredMixin, TemplateView):
             except ServiceException as e:
                 form.add_error("url", str(e.detail))
         query = QueryDict(f"rendering_url={full_url}")
-        return redirect(f'{reverse('initiate_crawling')}?{query.urlencode()}')
+        return redirect(f'{reverse("initiate_crawling")}?{query.urlencode()}')
