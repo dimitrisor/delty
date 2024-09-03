@@ -311,21 +311,6 @@ files = [
 django = ">3.2"
 
 [[package]]
-name = "django-debug-toolbar"
-version = "4.4.6"
-description = "A configurable set of panels that display various debug information about the current request/response."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "django_debug_toolbar-4.4.6-py3-none-any.whl", hash = "sha256:3beb671c9ec44ffb817fad2780667f172bd1c067dbcabad6268ce39a81335f45"},
-    {file = "django_debug_toolbar-4.4.6.tar.gz", hash = "sha256:36e421cb908c2f0675e07f9f41e3d1d8618dc386392ec82d23bcfcd5d29c7044"},
-]
-
-[package.dependencies]
-django = ">=4.2.9"
-sqlparse = ">=0.2"
-
-[[package]]
 name = "django-dramatiq"
 version = "0.11.6"
 description = "A Django app for Dramatiq."
@@ -1276,4 +1261,4 @@ test = ["WebTest (==2.0.23)", "flake8 (==3.0.3)", "flake8-blind-except (==0.1.1)
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.5"
-content-hash = "c82417f0ab2749390044634450a6c2cccbcd42fe594153d2d35d24d9eccedd65"
+content-hash = "1e8a42a37b0b64c9fae0e2190f244d8a42aeb01825d52658d9f4d1792e4e31fd"
