@@ -2,10 +2,6 @@ services:
   delty:
     container_name: delty
     build: .
-    environment:
-      - REDIS_BROKER_URL=redis://redis_app:6379/3
-      - REDIS_CACHE_URL=redis://redis_app:6379/4
-      - AWS_S3_HOST=http://localhost:4566
     env_file: .env # Here we place all the secrets that should not be exposed in GH
     volumes:
       - .:/app
