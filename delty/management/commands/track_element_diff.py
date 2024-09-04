@@ -13,9 +13,10 @@ class Command(BaseCommand):
     help = "This runs the difference tracking process for all active crawling jobs."
 
     def handle(self, *args, **kwargs):
+        logger.info(msg="Command for difference tracking has started.")
         for crawling_job in CrawlingJob.objects.filter(
             status=CrawlingJob.Status.ACTIVE
         ):
+            logger.info(msg=f"Crawling job  {str(crawling_job.id)} started.")
             TrackDifference.execute.send(crawling_job.user.id, str(crawling_job.id))
-
-        logger.info(msg="All active crawling jobs have successfully ran.")
+        logger.info(msg="All active crawling jobs have finished.")
