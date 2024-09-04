@@ -140,6 +140,9 @@ CACHES: dict[str, Any] = {
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+print("DATABASE_URL is: " + str(os.getenv("DATABASE_URL")))
+
 DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL"),

@@ -8,7 +8,9 @@ WORKDIR /app
 COPY . /app
 
 # Install Poetry
+# Ensure Poetry is added to PATH
 RUN pip install poetry
+ENV PATH="/usr/local/bin:$PATH"
 
 # Install dependencies
 RUN poetry config virtualenvs.create false
@@ -20,14 +22,19 @@ RUN playwright install
 
 ENV DJANGO_SETTINGS_MODULE="app.settings.local"
 
-## Run migrations
-#RUN poetry run python manage.py migrate
-
 # Collect static files
 RUN poetry run python manage.py collectstatic --noinput
 
-# Expose the port the app runs on
-EXPOSE 8000
+# Setup cron job
+# 1) Install cron
+# 2) Create logging file
+# 3) Write the cron command
+# 4) Give execution rights on the cron job
+# 5) Add cron job to crontab
+RUN apt-get update && apt-get install -y cron bash
+RUN touch /var/log/cron.log
+RUN echo "*/1 * * * * cd /app && export $(cat /app/.env | xargs) DJANGO_SETTINGS_MODULE='app.settings.local' && /usr/local/bin/poetry run python /app/manage.py track_element_diff >> /var/log/cron.log 2>&1" > /etc/cron.d/mycron
+RUN chmod 0644 /etc/cron.d/mycron
+RUN crontab /etc/cron.d/mycron
 
-# Run the application
-CMD ["poetry", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+EXPOSE 8000
