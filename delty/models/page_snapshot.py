@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import DO_NOTHING
 
 from delty.models import UrlAddress
-from delty.models import BaseModel
+from delty.models.base import BaseModel
 
 
 class PageSnapshot(BaseModel):

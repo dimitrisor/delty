@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="2.064" timestamp="2024-09-05T21:06:16.700950+00:00" hostname="Dimitriss-MBP.station"><testcase classname="" name="delty.tests.actions.test_track_difference" time="0.000"><error message="collection failure">delty/tests/actions/test_track_difference.py:5: in &lt;module&gt;
+    from delty.tasks import TrackDifference
+delty/tasks.py:1: in &lt;module&gt;
+    from delty.actions.track_difference import TrackDifference  # noqa
+delty/actions/track_difference.py:9: in &lt;module&gt;
+    from delty.models import CrawlingJob, PageSnapshot, ElementSnapshot
+delty/models/__init__.py:1: in &lt;module&gt;
+    from delty.models.url_address import UrlAddress
+delty/models/url_address.py:3: in &lt;module&gt;
+    from delty.models.base import BaseModel
+delty/models/base.py:6: in &lt;module&gt;
+    class BaseModel(models.Model):
+../../../Library/Caches/pypoetry/virtualenvs/delty-qnnfZnoB-py3.12/lib/python3.12/site-packages/django/db/models/base.py:129: in __new__
+    app_config = apps.get_containing_app_config(module)
+../../../Library/Caches/pypoetry/virtualenvs/delty-qnnfZnoB-py3.12/lib/python3.12/site-packages/django/apps/registry.py:260: in get_containing_app_config
+    self.check_apps_ready()
+../../../Library/Caches/pypoetry/virtualenvs/delty-qnnfZnoB-py3.12/lib/python3.12/site-packages/django/apps/registry.py:138: in check_apps_ready
+    raise AppRegistryNotReady("Apps aren't loaded yet.")
+E   django.core.exceptions.AppRegistryNotReady: Apps aren't loaded yet.</error></testcase></testsuite></testsuites>
