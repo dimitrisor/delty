@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.10.5-slim
+FROM python:3.12.4-slim
 
 # Set the working directory in the container
 WORKDIR /app
@@ -31,10 +31,9 @@ RUN poetry run python manage.py collectstatic --noinput
 # 3) Write the cron command
 # 4) Give execution rights on the cron job
 # 5) Add cron job to crontab
-RUN apt-get update && apt-get install -y cron bash
+# 6) Install postgresql-client to use pg_isready
+RUN apt-get update && apt-get install -y cron bash postgresql-client
 RUN touch /var/log/cron.log
 RUN echo "*/1 * * * * cd /app && export $(cat /app/.env | xargs) DJANGO_SETTINGS_MODULE='app.settings.local' && /usr/local/bin/poetry run python /app/manage.py track_element_diff >> /var/log/cron.log 2>&1" > /etc/cron.d/mycron
 RUN chmod 0644 /etc/cron.d/mycron
 RUN crontab /etc/cron.d/mycron
-
-EXPOSE 8000
