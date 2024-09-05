@@ -1,7 +1,7 @@
 import logging
 
 import dramatiq
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from delty.actions.common.fetch_response import fetch_response_fully_loaded
 from delty.errors import ActorNotFound, CrawlingJobNotFound
@@ -11,6 +11,7 @@ from delty.services.crawler import CrawlerService
 from delty.services.storage import StorageService
 from delty.utils import compute_sha256
 
+UserModel = get_user_model()
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +21,7 @@ class TrackDifference:
     def execute(actor_id: int, crawling_job_id: str):
         dramatiq.get_broker().logger.info("Message to be logged in the broker")
 
-        if not (actor := User.objects.get(id=actor_id)):
+        if not (actor := UserModel.objects.get(id=actor_id)):
             raise ActorNotFound(meta={"actor_id": actor_id})
 
         if not (crawling_job := CrawlingJob.objects.get(id=crawling_job_id)):

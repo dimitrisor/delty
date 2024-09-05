@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
 
-from delty.models import BaseModel, UrlAddress, ElementSnapshot
+from delty.models import UrlAddress, ElementSnapshot
+from delty.models.base import BaseModel
 
 
 class CrawlingJob(BaseModel):

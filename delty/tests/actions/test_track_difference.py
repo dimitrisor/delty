@@ -2,6 +2,7 @@ from unittest import mock
 
 import django.test
 
+from delty.services.storage import StorageService
 from delty.tasks import TrackDifference
 from delty.models import ElementSnapshot
 from delty.tests.factories.crawling_job import CrawlingJobFactory
@@ -13,8 +14,9 @@ from delty.utils import compute_sha256
 
 
 class TrackDifferenceTests(django.test.TestCase):
+    @mock.patch.object(StorageService, "upload_message")
     @mock.patch("delty.actions.track_difference.fetch_response_fully_loaded")
-    def test_execute_when_diff_found(self, mock_fetch_response):
+    def test_execute_when_diff_found(self, mock_fetch_response, mock_upload_message):
         init_page_content = '<html><body><div class="list_a"><ul><li>hi John</li></ul></div></body></html>'
         init_element_content = (
             '<div class="list_a"><ul><li>hi John</li></ul></div></body></html>'
@@ -28,6 +30,8 @@ class TrackDifferenceTests(django.test.TestCase):
             new_page_content,
             "text/html",
         )
+        mock_upload_message.return_value = "s3://bucket/key"
+
         user = UserFactory()
         url_address = UrlAddressFactory()
         page_snapshot = PageSnapshotFactory(
@@ -53,3 +57,7 @@ class TrackDifferenceTests(django.test.TestCase):
 
         self.assertEqual(crawling_job.latest_element_snapshot, new_element_snapshot)
         self.assertEqual(new_element_snapshot.hash, expected_new_element_snapshot_hash)
+        mock_upload_message.assert_called_once_with(
+            '<div class="list_a"><ul><li>hi John</li><li>hi Doe</li></ul></div>',
+            "88a6a938869d8437dbd0dabda25fccc5f6df4d32960ccaa1c8e0bd1e0456abb7",
+        )

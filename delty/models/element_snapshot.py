@@ -1,6 +1,7 @@
 from django.db import models
 
-from delty.models import BaseModel, PageSnapshot
+from delty.models import PageSnapshot
+from delty.models.base import BaseModel
 
 
 class ElementSnapshot(BaseModel):
