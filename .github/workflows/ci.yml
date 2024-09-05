@@ -1,0 +1,110 @@
+name: CI
+
+permissions:
+  packages: write
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+env:
+  TAG: ${{ ( github.event_name == 'pull_request' && format('pr-{0}', github.event.number) ) || 'latest' }}
+
+jobs:
+  test:
+    name: "Test"
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: delty
+          POSTGRES_USER: delty_user
+          POSTGRES_PASSWORD: delty_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: "postgres://delty_user:delty_pass@localhost:5432/delty"
+      DJANGO_SETTINGS_MODULE: "app.settings.test"
+    steps:
+      - name: "Checkout GH repository"
+        uses: actions/checkout@v4
+      - name: "Setup Cue"
+        uses: cue-lang/setup-cue@v1.0.0-alpha.2
+        with:
+          version: v0.4.3
+      - name: "Install Poetry"
+        run: pipx install poetry
+      - name: "Setup Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12.4
+          cache: poetry
+      - name: "Install packages"
+        run: poetry install
+      - name: "Run DB migrations"
+        run: poetry run python manage.py migrate
+      - name: "Run collectstatic"
+        run: poetry run python manage.py collectstatic --noinput
+      - name: "Activate Environment"
+        run: source $(poetry env info --path)/bin/activate
+      - name: "Cache Pre-commit"
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: "Install pre-commit"
+        run: poetry run pip install pre-commit
+      - name: "Run pre-commit"
+        run: poetry run pre-commit run --show-diff-on-failure --color=always -a --hook-stage manual
+      - name: "Run tests"
+        run: poetry run coverage run --source='.' manage.py test &&
+            poetry run coverage report -m &&
+            poetry run coverage html
+
+  build-image:
+    name: "Image: build"
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: "Checkout GH repository"
+        uses: actions/checkout@v4
+      - name: "Docker: Set up Buildx"
+        uses: docker/setup-buildx-action@v3
+      - name: "Docker: Login to GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Docker: Build and push image"
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/dimitrisor/delty:${{ env.TAG }}
+            ghcr.io/dimitrisor/delty:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Image Information
+        run: |
+          {
+            echo "### :rocket: Image Build Information"
+            echo "\`\`\`"
+            echo "Image name: ghcr.io/dimitrisor/delty:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
+            echo "\`\`\`"
+          } >> $GITHUB_STEP_SUMMARY
+    outputs:
+      image: ghcr.io/dimitrisor/delty@${{ steps.build-and-push.outputs.digest }}
