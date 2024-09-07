@@ -2,7 +2,7 @@ services:
   delty:
     container_name: delty
     build: .
-    command: bash -c "cron && ./wait-for-db.sh db && python manage.py migrate && poetry run python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "cron && ./wait-for-db.sh db && python manage.py migrate && gunicorn -w 4 -b 0.0.0.0:8000 app.asgi:application"
 
     env_file: .env # Here we place all the secrets that should not be exposed in GH
     volumes:
@@ -26,7 +26,7 @@ services:
 
   db:
     container_name: db
-    image: postgres:15
+    image: postgres:16
     stop_signal: SIGINT # Fast shutdown.
     environment:
       - POSTGRES_DB=delty
@@ -62,7 +62,7 @@ services:
       - "./init-s3-bucket.sh:/etc/localstack/init/ready.d/init-s3-bucket.sh"
 
   redis_app:
-    image: redis:7.4
+    image: redis
     ports: [ 6379:6379 ]
     volumes: [ redis_app:/var/lib/redis/data ]
     healthcheck:
