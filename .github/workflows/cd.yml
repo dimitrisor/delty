@@ -39,7 +39,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H $DELTY_SERVER_IP >> ~/.ssh/known_hosts
 
-      # Step 3: SSH into the Hetzner server and deploy the Docker container
+      # Step 3: SSH into the server and deploy the Docker container
       - name: Deploy Django application
         run: |
           ssh -v -o StrictHostKeyChecking=no $DELTY_SERVER_USERNAME@$DELTY_SERVER_IP << 'EOF'
@@ -54,7 +54,7 @@ jobs:
           # Run the Django application with Gunicorn
           docker run -d --name delty \
             -p 8000:8000 \
-            --env-file /home/diorfano/app/.env \
+            --env-file /home/$DELTY_SERVER_USERNAME/app/.env \
             ghcr.io/dimitrisor/delty:latest \
             bash -c "cron && gunicorn delty.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
@@ -64,7 +64,7 @@ jobs:
 
           # Run the Delty worker service
           docker run -d --name delty-worker \
-            --env-file /home/diorfano/app/.env \
+            --env-file /home/$DELTY_SERVER_USERNAME/app/.env \
             ghcr.io/dimitrisor/delty:latest \
             bash -c "cron && python manage.py rundramatiq --processes 2"
 
