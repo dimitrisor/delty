@@ -25,15 +25,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
 
-      - name: Test SSH agent
-        run: ssh-add -l
-
-      # Debug step: Print environment variables to ensure they are loaded correctly
-      - name: Check environment variables
-        run: |
-          echo "DELTY_SERVER_IP: $DELTY_SERVER_IP"
-          echo "DELTY_SERVER_USERNAME: $DELTY_SERVER_USERNAME"
-
       - name: Add server to known hosts
         run: |
           mkdir -p ~/.ssh
@@ -54,7 +45,7 @@ jobs:
           # Run the Django application with Gunicorn
           docker run -d --name delty \
             -p 8000:8000 \
-            --env-file /home/$DELTY_SERVER_USERNAME/app/.env \
+            --env-file ~/app/.env \
             ghcr.io/dimitrisor/delty:latest \
             bash -c "cron && gunicorn delty.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
@@ -64,7 +55,7 @@ jobs:
 
           # Run the Delty worker service
           docker run -d --name delty-worker \
-            --env-file /home/$DELTY_SERVER_USERNAME/app/.env \
+            --env-file ~/app/.env \
             ghcr.io/dimitrisor/delty:latest \
             bash -c "cron && python manage.py rundramatiq --processes 2"
 
