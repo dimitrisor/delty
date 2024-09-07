@@ -23,7 +23,7 @@ jobs:
       with:
         host: ${{ secrets.DELTY_HETZNER_IP }}
         username: ${{ secrets.DELTY_HETZNER_USERNAME }}
-        key: ${{ variables.DELTY_SSH_PRIVATE_KEY }}
+        key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
         port: 22
         script: |
           # Pull the latest application container
