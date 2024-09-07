@@ -24,6 +24,12 @@ jobs:
           ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
       - name: Test SSH agent
         run: ssh-add -l
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DELTY_HETZNER_IP }} >> ~/.ssh/known_hosts
+
       # Step 3: SSH into the Hetzner server and deploy the Docker container
       - name: Deploy Django application
         run: |
