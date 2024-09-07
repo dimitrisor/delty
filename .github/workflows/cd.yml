@@ -24,8 +24,15 @@ jobs:
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
+
       - name: Test SSH agent
         run: ssh-add -l
+
+      # Debug step: Print environment variables to ensure they are loaded correctly
+      - name: Check environment variables
+        run: |
+          echo "DELTY_SERVER_IP: $DELTY_SERVER_IP"
+          echo "DELTY_SERVER_USERNAME: $DELTY_SERVER_USERNAME"
 
       - name: Add server to known hosts
         run: |
