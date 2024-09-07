@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: SSH to Hetzner Server
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.DELTY_HETZNER_IP }}
         username: ${{ secrets.DELTY_HETZNER_USERNAME }}
