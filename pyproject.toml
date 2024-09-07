@@ -6,14 +6,14 @@ authors = ["Dimitris Orfanoudakis <dimitrisorfanudakis@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12.4"
+python = ">=3.12.4,<3.13"
 django = "^5.0.6"
 requests = "^2.32.3"
 beautifulsoup4 = "^4.12.3"
 django-crispy-forms = "^2.2"
 crispy-bootstrap5 = "^2024.2"
 django-redis = "^5.4.0"
-django-database-url = "^1.0.3"
+dj_database_url = "^1.0.3"
 pre-commit = "^3.7.1"
 mypy = "^1.10.1"
 types-requests = "^2.32.0.20240622"
@@ -29,6 +29,9 @@ django-dramatiq = "^0.11.6"
 dramatiq-dashboard = "^0.4.0"
 wsgi-basic-auth = "^1.1.0"
 pytest-cov = "^5.0.0"
+python-dotenv = "^1.0.1"
+gunicorn = "^23.0.0"
+apache-airflow = "^2.10.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

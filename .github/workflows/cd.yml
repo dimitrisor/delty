@@ -1,0 +1,207 @@
+name: Deploy1
+
+permissions:
+  packages: write
+  contents: read
+
+# The workflow will run whenever a push occurs on the main branch
+on:
+  push:
+    branches: [main]
+
+env:
+  TAG: ${{ ( github.event_name == 'pull_request' && format('pr-{0}', github.event.number) ) || 'latest' }}
+  DELTY_SERVER_USERNAME: ${{ secrets.DELTY_SERVER_USERNAME }}
+  DELTY_SERVER_IP: ${{ vars.DELTY_SERVER_IP }}
+
+jobs:
+  test:
+    name: "Test"
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: delty
+          POSTGRES_USER: delty_user
+          POSTGRES_PASSWORD: delty_pass
+        options: >-
+          --health-cmd "pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.4
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping | grep PONG"
+    env:
+      DJANGO_SETTINGS_MODULE: "app.settings.test"
+      DATABASE_URL: "postgres://delty_user:delty_pass@localhost:5432/delty"
+    steps:
+      - name: "Checkout GH repository"
+        uses: actions/checkout@v4
+      - name: "Setup Cue"
+        uses: cue-lang/setup-cue@v1.0.0-alpha.2
+        with:
+          version: v0.4.3
+
+      - name: "Cache Poetry Dependencies"
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-deps-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            poetry-deps-
+
+      - name: "Install Poetry"
+        run: pipx install poetry
+      - name: "Setup Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12.4
+          cache: poetry
+      - name: "Install packages"
+        run: poetry install
+      - name: "Run DB migrations"
+        run: poetry run python manage.py migrate
+      - name: "Run collectstatic"
+        run: poetry run python manage.py collectstatic --noinput
+      - name: "Activate Environment"
+        run: source $(poetry env info --path)/bin/activate
+      - name: "Cache Pre-commit"
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: "Install pre-commit"
+        run: poetry run pip install pre-commit
+      - name: "Run pre-commit"
+        run: poetry run pre-commit run --show-diff-on-failure --color=always -a --hook-stage manual
+      - name: "Run tests"
+        run: poetry run coverage run --source='.' manage.py test &&
+          poetry run coverage report -m &&
+          poetry run coverage html
+
+  build-image:
+    name: "Build Image"
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: "Checkout GH repository"
+        uses: actions/checkout@v4
+      - name: "Docker: Set up Buildx"
+        uses: docker/setup-buildx-action@v3
+      - name: "Docker: Login to GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Docker: Build and push image"
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/dimitrisor/delty:${{ env.TAG }}
+            ghcr.io/dimitrisor/delty:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Image Information
+        run: |
+          {
+            echo "### :rocket: Image Build Information"
+            echo "\`\`\`"
+            echo "Image name: ghcr.io/dimitrisor/delty:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
+            echo "\`\`\`"
+          } >> $GITHUB_STEP_SUMMARY
+    outputs:
+      image: ghcr.io/dimitrisor/delty@${{ steps.build-and-push.outputs.digest }}
+
+  production-deploy:
+    name: "Deploy to Production"
+    needs: [ build-image ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H $DELTY_SERVER_IP >> ~/.ssh/known_hosts
+
+      # Step 3: SSH into the server and deploy the Docker container
+      - name: Deploy Django application
+        run: |
+          ssh -v -o StrictHostKeyChecking=no $DELTY_SERVER_USERNAME@$DELTY_SERVER_IP << 'EOF'
+
+          # Log in to GHCR
+          echo "${{ secrets.DELTY_GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Pull the latest application container
+          docker pull ghcr.io/dimitrisor/delty:latest
+
+          # Stop and remove existing application container
+          docker stop delty || true
+          docker rm delty || true
+
+          # Run the Django application with Gunicorn
+          docker run -d --name delty \
+            --network delty_network \
+            -p 8000:8000 \
+            --env-file ~/app/.env \
+            -v ~/app/staticfiles:/app/staticfiles \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
+            -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
+            -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
+            -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
+            ghcr.io/dimitrisor/delty:latest \
+            sh -c "cron && python manage.py collectstatic --noinput && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+
+          # Stop and remove existing worker container
+          docker stop delty-worker || true
+          docker rm delty-worker || true
+
+          # Run the Delty worker service
+          docker run -d --name delty-worker \
+            --network delty_network \
+            --env-file ~/app/.env \
+            -v ~/app/staticfiles:/app/staticfiles \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
+            -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
+            -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
+            -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
+            ghcr.io/dimitrisor/delty:latest \
+            sh -c "cron && python manage.py collectstatic --noinput && python manage.py rundramatiq --processes 2"
+
+          # Check if the MinIO container exists
+          if [ ! "$(docker ps -a -q -f name=s3)" ]; then
+            echo "MinIO container not found. Running the MinIO container for the first time."
+
+            # Run the MinIO (S3) service
+            docker run -d --name s3 \
+              --network delty_network \
+              --env-file ~/app/.env \
+              -p 9000:9000 -p 9001:9001 \
+              -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
+              -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
+              -v ~/minio/data:/data \
+              minio/minio:latest \
+              sh -c "mkdir -p /data/comms && minio server /data --console-address ':9001'"
+          else
+            echo "MinIO container found. Starting the existing container."
+            docker start s3
+          fi
+          EOF

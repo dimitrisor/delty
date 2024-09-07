@@ -2,6 +2,7 @@ from app import env
 from app.settings.base import *  # noqa
 
 DEBUG = False
+ENVIRONMENT = "production"
 
 SECRET_KEY = env.get_str("SECRET_KEY")
 
