@@ -24,7 +24,7 @@ jobs:
         host: ${{ secrets.DELTY_HETZNER_IP }}
         username: ${{ secrets.DELTY_HETZNER_USERNAME }}
         key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
-        port: 2200
+        port: 22
         script: |
           # Pull the latest application container
           docker pull ghcr.io/dimitrisor/delty:latest
