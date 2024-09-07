@@ -33,7 +33,7 @@ jobs:
       # Step 3: SSH into the Hetzner server and deploy the Docker container
       - name: Deploy Django application
         run: |
-          ssh -v -o StrictHostKeyChecking=no ${{ secrets.DELTY_HETZNER_USERNAME }}@${{ secrets.DELTY_HETZNER_IP }} << 'EOF'
+          ssh -v -o StrictHostKeyChecking=no diorfano@95.216.208.156 << 'EOF'
 
           # Pull the latest application container
           docker pull ghcr.io/dimitrisor/delty:latest
