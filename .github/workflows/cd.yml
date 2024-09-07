@@ -22,11 +22,12 @@ jobs:
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
-
+      - name: Test SSH agent
+        run: ssh-add -l
       # Step 3: SSH into the Hetzner server and deploy the Docker container
       - name: Deploy Django application
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DELTY_HETZNER_USERNAME }}@${{ secrets.DELTY_HETZNER_IP }} << 'EOF'
+          ssh -v -o StrictHostKeyChecking=no ${{ secrets.DELTY_HETZNER_USERNAME }}@${{ secrets.DELTY_HETZNER_IP }} << 'EOF'
 
           # Pull the latest application container
           docker pull ghcr.io/dimitrisor/delty:latest
