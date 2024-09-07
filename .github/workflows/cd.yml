@@ -1,12 +1,13 @@
-name: CI1
+name: Deploy1
 
 permissions:
   packages: write
   contents: read
 
-# The workflow will run whenever a pull request is created, updated, or merged
+# The workflow will run whenever a push occurs on the main branch
 on:
-  pull_request:
+  push:
+    branches: [main]
 
 env:
   TAG: ${{ ( github.event_name == 'pull_request' && format('pr-{0}', github.event.number) ) || 'latest' }}
@@ -20,10 +21,10 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_DB: delty
-          POSTGRES_USER: delty_user
-          POSTGRES_PASSWORD: delty_pass
+          POSTGRES_USER: ${{ secrets.DATABASE_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
         options: >-
-          --health-cmd "pg_isready -h localhost -p 5432 -U delty_user -d delty_pass"
+          --health-cmd "pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -35,17 +36,9 @@ jobs:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping | grep PONG"
-
     env:
-      DJANGO_SETTINGS_MODULE: "app.settings.test"
-      DATABASE_URL: "postgres://delty_user:delty_pass@localhost:5432/delty"
+      DATABASE_URL: "postgres://${{ secrets.DATABASE_USER }}:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/delty"
     steps:
-      - name: "Check DATABASE_URL"
-        run: echo $DATABASE_URL
-      - name: "Write DATABASE_URL to file"
-        run: echo $DATABASE_URL > database_url.txt
-      - name: "Print DATABASE_URL from file"
-        run: cat database_url.txt
       - name: "Checkout GH repository"
         uses: actions/checkout@v4
       - name: "Setup Cue"
@@ -119,3 +112,40 @@ jobs:
           } >> $GITHUB_STEP_SUMMARY
     outputs:
       image: ghcr.io/dimitrisor/delty@${{ steps.build-and-push.outputs.digest }}
+
+  production-deploy:
+    name: "Deploy to Production"
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    steps:
+    - name: SSH to Hetzner Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DELTY_HETZNER_IP }}
+        username: ${{ secrets.DELTY_HETZNER_USERNAME }}
+        key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          # Pull the latest application container
+          docker pull ghcr.io/dimitrisor/delty:latest
+
+          # Stop and remove existing application container
+          docker stop delty || true
+          docker rm delty || true
+
+          # Run the Django application with Gunicorn
+          docker run -d --name delty \
+            -p 8000:8000 \
+            --env-file /home/diorfano/app/.env \
+            ghcr.io/dimitrisor/delty:latest \
+            bash -c "cron && gunicorn delty.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+
+          # Stop and remove existing worker container
+          docker stop delty-worker || true
+          docker rm delty-worker || true
+
+          # Run the Delty worker service
+          docker run -d --name delty-worker \
+            --env-file /home/diorfano/app/.env \
+            ghcr.io/dimitrisor/delty:latest \
+            bash -c "cron && python manage.py rundramatiq --processes 2"

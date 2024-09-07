@@ -142,6 +142,11 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+if os.getenv("DATABASE_URL"):
+    print(os.getenv("DATABASE_URL"))
+else:
+    print("DATABASE_URL not set")
+
 DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL"),
