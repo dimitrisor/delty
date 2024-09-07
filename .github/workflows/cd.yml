@@ -18,14 +18,16 @@ jobs:
     needs: []
     runs-on: ubuntu-latest
     steps:
-    - name: SSH to Hetzner Server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.DELTY_HETZNER_IP }}
-        username: ${{ secrets.DELTY_HETZNER_USERNAME }}
-        key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
-        port: 22
-        script: |
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.DELTY_SSH_PRIVATE_KEY }}
+
+      # Step 3: SSH into the Hetzner server and deploy the Docker container
+      - name: Deploy Django application
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DELTY_HETZNER_USERNAME }}@${{ secrets.DELTY_HETZNER_IP }} << 'EOF'
+
           # Pull the latest application container
           docker pull ghcr.io/dimitrisor/delty:latest
 
@@ -49,3 +51,5 @@ jobs:
             --env-file /home/diorfano/app/.env \
             ghcr.io/dimitrisor/delty:latest \
             bash -c "cron && python manage.py rundramatiq --processes 2"
+
+          EOF
