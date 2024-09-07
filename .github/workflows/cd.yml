@@ -21,8 +21,8 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_DB: delty
-          POSTGRES_USER: ${{ secrets.DATABASE_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          POSTGRES_USER: delty_user
+          POSTGRES_PASSWORD: delty_pass
         options: >-
           --health-cmd "pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB"
           --health-interval 10s
@@ -37,7 +37,8 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping | grep PONG"
     env:
-      DATABASE_URL: "postgres://${{ secrets.DATABASE_USER }}:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/delty"
+      DJANGO_SETTINGS_MODULE: "app.settings.test"
+      DATABASE_URL: "postgres://delty_user:delty_pass@localhost:5432/delty"
     steps:
       - name: "Checkout GH repository"
         uses: actions/checkout@v4
