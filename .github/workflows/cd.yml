@@ -151,7 +151,7 @@ jobs:
             -p 8000:8000 \
             --env-file ~/app/.env \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && gunicorn delty.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+            sh -c "cron && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
