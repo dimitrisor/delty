@@ -150,6 +150,8 @@ jobs:
           docker run -d --name delty \
             -p 8000:8000 \
             --env-file ~/app/.env \
+            -e DJANGO_SETTINGS_MODULE=app.settings.default \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/delty" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
@@ -160,6 +162,8 @@ jobs:
           # Run the Delty worker service
           docker run -d --name delty-worker \
             --env-file ~/app/.env \
+            -e DJANGO_SETTINGS_MODULE=app.settings.default \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/delty" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py rundramatiq --processes 2"
 
