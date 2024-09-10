@@ -152,7 +152,7 @@ jobs:
             --env-file ~/app/.env \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
-            -e REDIS_CACHE_URL=redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4
+            -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
@@ -165,7 +165,7 @@ jobs:
             --env-file ~/app/.env \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
-            -e REDIS_CACHE_URL=redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4
+            -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py rundramatiq --processes 2"
 
