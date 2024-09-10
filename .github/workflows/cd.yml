@@ -131,11 +131,6 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H $DELTY_SERVER_IP >> ~/.ssh/known_hosts
 
-      - name: URL encode the database password
-        id: encode_password
-        run: |
-          echo "DATABASE_PASSWORD_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${{ secrets.DATABASE_PASSWORD }}'))")" >> $GITHUB_ENV
-
       # Step 3: SSH into the server and deploy the Docker container
       - name: Deploy Django application
         run: |
@@ -155,7 +150,7 @@ jobs:
           docker run -d --name delty \
             -p 8000:8000 \
             --env-file ~/app/.env \
-            -e DATABASE_URL="postgres://delty_user:${{ env.DATABASE_PASSWORD_ENCODED }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
@@ -166,7 +161,7 @@ jobs:
           # Run the Delty worker service
           docker run -d --name delty-worker \
             --env-file ~/app/.env \
-            -e DATABASE_URL="postgres://delty_user:${{ env.DATABASE_PASSWORD_ENCODED }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
+            -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py rundramatiq --processes 2"
 
