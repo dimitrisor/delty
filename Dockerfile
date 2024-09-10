@@ -37,3 +37,4 @@ RUN touch /var/log/cron.log
 RUN echo "*/1 * * * * cd /app && export $(cat /app/.env | xargs) DJANGO_SETTINGS_MODULE='app.settings.local' && /usr/local/bin/poetry run python /app/manage.py track_element_diff >> /var/log/cron.log 2>&1" > /etc/cron.d/mycron
 RUN chmod 0644 /etc/cron.d/mycron
 RUN crontab /etc/cron.d/mycron
+export DATABASE_URL="postgres://delty_user:lMRknAb3IsIUUxfvQ8qP%RSar5DI^**R0%6iyBJks*27jtpYa&@^WXbZAMIdzR@BHB73%RFyZncOI5B4H5HR!&aex1!habA4E@#AtEIBF0KRp5giCTAvKQPdg6@"; DJANGO_SETTINGS_MODULE=app.settings.defaultpython manage.py migrate

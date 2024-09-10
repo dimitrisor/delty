@@ -153,7 +153,7 @@ jobs:
             -e DJANGO_SETTINGS_MODULE=app.settings.default \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@95.216.208.156:5432/delty" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+            sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
