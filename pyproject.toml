@@ -6,7 +6,7 @@ authors = ["Dimitris Orfanoudakis <dimitrisorfanudakis@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12.4"
+python = ">=3.12.4,<3.13"
 django = "^5.0.6"
 requests = "^2.32.3"
 beautifulsoup4 = "^4.12.3"

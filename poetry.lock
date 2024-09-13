@@ -1342,5 +1342,5 @@ test = ["WebTest (==2.0.23)", "flake8 (==3.0.3)", "flake8-blind-except (==0.1.1)
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.12.4"
-content-hash = "2866e036605a1f7ee9ce9def5732cbf1328b18fe1b8abdcc22748a9bbdea6780"
+python-versions = ">=3.12.4,<3.13"
+content-hash = "c3ec444993d5feeb276ca74495b5724d88f7b7856b1a29271377fa654c841f54"
