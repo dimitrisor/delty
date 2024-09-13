@@ -166,7 +166,7 @@ jobs:
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
             -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
-            -e AWS_ACCESS_KEY_ID="${{ variables.AWS_ACCESS_KEY_ID}}" \
+            -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py rundramatiq --processes 2"
@@ -175,7 +175,7 @@ jobs:
           docker run -d --name s3 \
             --env-file ~/app/.env \
             -p 9000:9000 -p 9001:9001 \
-            -e MINIO_ROOT_USER=${{ variables.AWS_ACCESS_KEY_ID}} \
+            -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
             -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
             -v ~/minio/data:/data \
             minio/minio:latest server /data --console-address ":9001"
