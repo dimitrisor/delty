@@ -74,12 +74,12 @@ jobs:
         run: poetry run pre-commit run --show-diff-on-failure --color=always -a --hook-stage manual
       - name: "Run tests"
         run: poetry run coverage run --source='.' manage.py test &&
-            poetry run coverage report -m &&
-            poetry run coverage html
+          poetry run coverage report -m &&
+          poetry run coverage html
 
   build-image:
     name: "Build Image"
-    needs: [test]
+    needs: [ test ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -118,7 +118,7 @@ jobs:
 
   production-deploy:
     name: "Deploy to Production"
-    needs: [build-image]
+    needs: [ build-image ]
     runs-on: ubuntu-latest
     steps:
       - name: Start SSH agent
@@ -153,6 +153,8 @@ jobs:
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
             -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
+            -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"
 
