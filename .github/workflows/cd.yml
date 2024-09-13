@@ -156,7 +156,7 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"
+            sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 60"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
@@ -171,5 +171,5 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py rundramatiq --processes 2"
+            sh -c "cron && python manage.py rundramatiq --processes 1"
           EOF
