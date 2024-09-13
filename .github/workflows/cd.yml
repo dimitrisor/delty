@@ -148,6 +148,7 @@ jobs:
 
           # Run the Django application with Gunicorn
           docker run -d --name delty \
+            --network delty_network \
             -p 8000:8000 \
             --env-file ~/app/.env \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
@@ -156,7 +157,7 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 60"
+            sh -c "cron && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
@@ -164,6 +165,7 @@ jobs:
 
           # Run the Delty worker service
           docker run -d --name delty-worker \
+            --network delty_network \
             --env-file ~/app/.env \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
@@ -171,5 +173,14 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py rundramatiq --processes 1"
+            sh -c "cron && python manage.py rundramatiq --processes 2"
+
+          # Run the MinIO (S3) service
+          docker run -d --name s3 --network my_network
+            --env-file ~/app/.env \
+            -p 9000:9000 -p 9001:9001 \
+            -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
+            -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
+            -v ~/minio/data:/data \
+            minio/minio:latest server /data --console-address ":9001"
           EOF
