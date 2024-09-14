@@ -176,7 +176,8 @@ jobs:
             sh -c "cron && python manage.py rundramatiq --processes 2"
 
           # Run the MinIO (S3) service
-          docker run -d --name s3 --network my_network
+          docker run -d --name s3 \
+            --network delty_network \
             --env-file ~/app/.env \
             -p 9000:9000 -p 9001:9001 \
             -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
