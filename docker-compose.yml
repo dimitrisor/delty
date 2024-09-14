@@ -26,6 +26,23 @@ services:
       - redis
       - s3
 
+  airflow:
+    container_name: airflow
+    image: apache/airflow:2.6.1
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow_user:airflow_pass@db:5432/airflow
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    command: bash -c "airflow db init && airflow webserver & airflow scheduler"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - db
+
   db:
     container_name: db
     image: postgres:15

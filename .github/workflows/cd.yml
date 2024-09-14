@@ -167,6 +167,7 @@ jobs:
           docker run -d --name delty-worker \
             --network delty_network \
             --env-file ~/app/.env \
+            -v ~/app/static:/app/static \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
             -e REDIS_BROKER_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/3" \
             -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
