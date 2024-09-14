@@ -31,6 +31,7 @@ wsgi-basic-auth = "^1.1.0"
 pytest-cov = "^5.0.0"
 python-dotenv = "^1.0.1"
 gunicorn = "^23.0.0"
+apache-airflow = "^2.10.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
