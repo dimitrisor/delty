@@ -175,13 +175,21 @@ jobs:
             ghcr.io/dimitrisor/delty:latest \
             sh -c "cron && python manage.py rundramatiq --processes 2"
 
-          # Run the MinIO (S3) service
-          docker run -d --name s3 \
-            --network delty_network \
-            --env-file ~/app/.env \
-            -p 9000:9000 -p 9001:9001 \
-            -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
-            -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
-            -v ~/minio/data:/data \
-            minio/minio:latest server /data --console-address ":9001"
+          # Check if the MinIO container exists
+          if [ ! "$(docker ps -a -q -f name=s3)" ]; then
+            echo "MinIO container not found. Running the MinIO container for the first time."
+
+            # Run the MinIO (S3) service
+            docker run -d --name s3 \
+              --network delty_network \
+              --env-file ~/app/.env \
+              -p 9000:9000 -p 9001:9001 \
+              -e MINIO_ROOT_USER=${{ vars.AWS_ACCESS_KEY_ID}} \
+              -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
+              -v ~/minio/data:/data \
+              minio/minio:latest server /data --console-address ":9001"
+          else
+            echo "MinIO container found. Starting the existing container."
+            docker start s3
+          fi
           EOF
