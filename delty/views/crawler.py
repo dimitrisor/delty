@@ -29,8 +29,8 @@ class CrawlerView(LoginRequiredMixin, View):
                 iframe_width = form.cleaned_data["iframe_width"]
                 iframe_height = form.cleaned_data["iframe_height"]
                 user_agent = request.META.get("HTTP_USER_AGENT", "")
-                initiate_element_crawling.execute(
-                    request.user,
+                initiate_element_crawling.execute.send(
+                    request.user.id,
                     url,
                     element_selector,
                     iframe_width,

@@ -3,7 +3,7 @@ from unittest import mock
 import django.test
 
 from delty.services.storage import StorageService
-from delty.tasks import TrackDifference
+from delty.tasks import TrackContentDifference
 from delty.models import ElementSnapshot
 from delty.tests.factories.crawling_job import CrawlingJobFactory
 from delty.tests.factories.element_snapshot import ElementSnapshotFactory
@@ -13,9 +13,9 @@ from delty.tests.factories.user import UserFactory
 from delty.utils import compute_sha256
 
 
-class TrackDifferenceTests(django.test.TestCase):
+class TrackContentDifferenceTests(django.test.TestCase):
     @mock.patch.object(StorageService, "upload_message")
-    @mock.patch("delty.actions.track_difference.fetch_response_fully_loaded")
+    @mock.patch("delty.actions.track_content_difference.fetch_response_fully_loaded")
     def test_execute_when_diff_found(self, mock_fetch_response, mock_upload_message):
         init_page_content = '<html><body><div class="list_a"><ul><li>hi John</li></ul></div></body></html>'
         init_element_content = (
@@ -50,7 +50,7 @@ class TrackDifferenceTests(django.test.TestCase):
             '<div class="list_a"><ul><li>hi John</li><li>hi ' "Doe</li></ul></div>"
         )
 
-        TrackDifference.execute(crawling_job.user.id, str(crawling_job.id))
+        TrackContentDifference.execute(crawling_job.user.id, str(crawling_job.id))
 
         new_element_snapshot = ElementSnapshot.objects.order_by("-version").first()
         crawling_job.refresh_from_db()

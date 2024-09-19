@@ -15,7 +15,7 @@ UserModel = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-class TrackDifference:
+class TrackContentDifference:
     @staticmethod
     @dramatiq.actor(max_retries=10, actor_name="process_track_content_difference")
     def execute(actor_id: int, crawling_job_id: str):
@@ -27,7 +27,7 @@ class TrackDifference:
         if not (crawling_job := CrawlingJob.objects.get(id=crawling_job_id)):
             raise CrawlingJobNotFound(meta={"crawling_job_id": crawling_job_id})
 
-        crawler = CrawlerService()
+        crawler_service = CrawlerService()
         s3_service = StorageService()
         try:
             url = crawling_job.url_address.url
@@ -41,7 +41,7 @@ class TrackDifference:
                 crawling_job.user_agent,
             )
 
-            new_element_content = crawler.get_selected_element_content(
+            new_element_content = crawler_service.get_selected_element_content(
                 new_page_html, css_selector
             )
             new_element_content_hash = compute_sha256(new_element_content)

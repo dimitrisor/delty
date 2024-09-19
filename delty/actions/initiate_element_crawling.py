@@ -2,17 +2,19 @@ import logging
 import uuid
 from dataclasses import dataclass
 
-from django.contrib.auth.models import User
+import dramatiq
+from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from delty.actions.common.fetch_response import fetch_response_fully_loaded
-from delty.errors import CrawlingJobAlreadyExists
+from delty.errors import CrawlingJobAlreadyExists, ActorNotFound
 from delty.exceptions import ServiceException
 from delty.models import CrawlingJob, UrlAddress, PageSnapshot, ElementSnapshot
 from delty.services.crawler import CrawlerService
 from delty.services.storage import StorageService
 from delty.utils import compute_sha256
 
+UserModel = get_user_model()
 logger = logging.getLogger(__name__)
 
 
@@ -22,26 +24,29 @@ class CrawlingJobDto:
 
 
 class InitiateElementCrawling:
-    crawler_service = CrawlerService()
-    s3_service = StorageService()
-
+    @staticmethod
+    @dramatiq.actor(max_retries=10, actor_name="process_initiate_element_crawling")
     def execute(
-        self,
-        actor: User,
+        actor_id: int,
         url: str,
         element_selector: str,
         iframe_width: int,
         iframe_height: int,
         user_agent: str,
     ) -> CrawlingJobDto:
+        dramatiq.get_broker().logger.info("Message to be logged in the broker")
+
+        if not (actor := UserModel.objects.get(id=actor_id)):
+            raise ActorNotFound(meta={"actor_id": actor_id})
+
+        crawler_service = CrawlerService()
+        s3_service = StorageService()
         try:
             content_html, _ = fetch_response_fully_loaded(
                 url, iframe_width, iframe_height, user_agent
             )
-            selected_element_content = (
-                self.crawler_service.get_selected_element_content(
-                    content_html, element_selector
-                )
+            selected_element_content = crawler_service.get_selected_element_content(
+                content_html, element_selector
             )
             with transaction.atomic():
                 page_html_hash = compute_sha256(content_html)
@@ -75,7 +80,7 @@ class InitiateElementCrawling:
                     },
                 )
                 if created:
-                    element_content_path = self.s3_service.upload_message(
+                    element_content_path = s3_service.upload_message(
                         selected_element_content, selected_element.hash
                     )
                     selected_element.content_path = element_content_path
