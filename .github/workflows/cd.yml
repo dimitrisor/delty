@@ -199,7 +199,7 @@ jobs:
               -e MINIO_ROOT_PASSWORD=${{ secrets.AWS_SECRET_ACCESS_KEY}} \
               -v ~/minio/data:/data \
               minio/minio:latest \
-              sh -c "mkdir -p /data/comms && minio server /data --console-address ':9001'"
+              sh -c "mkdir -p /data/selected-element-html-s3-bucket && minio server --address 0.0.0.0:9000 --console-address ':9001' /data"
           else
             echo "MinIO container found. Starting the existing container."
             docker start s3
