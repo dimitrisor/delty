@@ -4,11 +4,9 @@
 
 ### Requirements
 
-1. Complete the numan-development
-   [quick-start](https://github.com/BeaNuman/numan-development#quickstart) guide, until
-   the docker provision.
-2. Install [pyenv](https://github.com/pyenv/pyenv-installer) to manage python versions
+1. Install [pyenv](https://github.com/pyenv/pyenv-installer) to manage python versions
    on your local machine.
+2. ...
 
 ## Setup
 

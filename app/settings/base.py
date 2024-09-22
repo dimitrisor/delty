@@ -153,3 +153,4 @@ DELTY_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 from .extras.s3 import *  # noqa
 from .extras.logging import *  # noqa
 from .extras.dramatiq import *  # noqa
+from .extras.grpc import *  # noqa
