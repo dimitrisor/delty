@@ -1,4 +1,4 @@
-name: Deploy1
+name: Deploy
 
 permissions:
   packages: write
@@ -102,8 +102,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: "Docker: Build and push image"
-        id: build-and-push
+      - name: "Docker: Build and push Delty image"
+        id: build-and-push-delty
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -114,7 +114,7 @@ jobs:
             ghcr.io/dimitrisor/delty:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Image Information
+      - name: "Docker: Delty Image Information"
         run: |
           {
             echo "### :rocket: Image Build Information"
@@ -122,8 +122,29 @@ jobs:
             echo "Image name: ghcr.io/dimitrisor/delty:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
             echo "\`\`\`"
           } >> $GITHUB_STEP_SUMMARY
+      - name: "Docker: Build and push Delty-Airflow image"
+        id: build-and-push-airflow
+        uses: docker/build-push-action@v5
+        with:
+          context: ./airflow
+          file: airflow/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/dimitrisor/delty-airflow:${{ env.TAG }}
+            ghcr.io/dimitrisor/delty-airflow:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: "Docker: Delty-Airflow Image Information"
+        run: |
+          {
+            echo "### :rocket: Image Build Information"
+            echo "\`\`\`"
+            echo "Image name: ghcr.io/dimitrisor/delty-airflow:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
+            echo "\`\`\`"
+          } >> $GITHUB_STEP_SUMMARY
     outputs:
-      image: ghcr.io/dimitrisor/delty@${{ steps.build-and-push.outputs.digest }}
+      delty-image: ghcr.io/dimitrisor/delty@${{ steps.build-and-push-delty.outputs.digest }}
+      delty-airflow-image: ghcr.io/dimitrisor/delty-airflow@${{ steps.build-and-push-airflow.outputs.digest }}
 
   production-deploy:
     name: "Deploy to Production"
@@ -167,7 +188,7 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py collectstatic --noinput && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+            sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
@@ -184,7 +205,7 @@ jobs:
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
             ghcr.io/dimitrisor/delty:latest \
-            sh -c "cron && python manage.py collectstatic --noinput && python manage.py rundramatiq --processes 2"
+            sh -c "python manage.py collectstatic --noinput && python manage.py rundramatiq --processes 2"
 
           # Check if the MinIO container exists
           if [ ! "$(docker ps -a -q -f name=s3)" ]; then
@@ -203,5 +224,23 @@ jobs:
           else
             echo "MinIO container found. Starting the existing container."
             docker start s3
+          fi
+
+          # Check if the Airflow container exists
+          if [ ! "$(docker ps -a -q -f name=delty-airflow)" ]; then
+            echo "Airflow container not found. Running the Airflow container for the first time."
+
+            # Run the Airflow service
+            docker run -d --name delty-airflow \
+              -p 8080:8080 \
+              -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/airflow" \
+              -e AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False \
+              -e AIRFLOW__CORE__EXECUTOR=LocalExecutor \
+              -e AIRFLOW__CORE__LOAD_EXAMPLES=False \
+              -e GRPC_SERVER_ADDRESS=delty:50051 \
+              ghcr.io/dimitrisor/delty-airflow:latest \
+          else
+            echo "Airflow container found. Starting the existing container."
+            docker start airflow
           fi
           EOF
