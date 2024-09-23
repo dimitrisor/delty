@@ -86,9 +86,6 @@ services:
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - GRPC_SERVER_ADDRESS=delty:50051
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./system/scripts/wait-for-db.sh:/opt/airflow/wait-for-db.sh
     ports:
       - "8080:8080"
     depends_on:

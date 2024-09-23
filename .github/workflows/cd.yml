@@ -119,7 +119,7 @@ jobs:
           {
             echo "### :rocket: Image Build Information"
             echo "\`\`\`"
-            echo "Image name: ghcr.io/dimitrisor/delty:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
+            echo "Image name: ghcr.io/dimitrisor/delty:${{ env.TAG }}@${{ steps.build-and-push-delty.outputs.digest }}"
             echo "\`\`\`"
           } >> $GITHUB_STEP_SUMMARY
       - name: "Docker: Build and push Delty-Airflow image"
@@ -139,7 +139,7 @@ jobs:
           {
             echo "### :rocket: Image Build Information"
             echo "\`\`\`"
-            echo "Image name: ghcr.io/dimitrisor/delty-airflow:${{ env.TAG }}@${{ steps.build-and-push.outputs.digest }}"
+            echo "Image name: ghcr.io/dimitrisor/delty-airflow:${{ env.TAG }}@${{ steps.build-and-push-airflow.outputs.digest }}"
             echo "\`\`\`"
           } >> $GITHUB_STEP_SUMMARY
     outputs:
@@ -180,6 +180,7 @@ jobs:
           docker run -d --name delty \
             --network delty_network \
             -p 8000:8000 \
+            -p 50051:50051 \
             --env-file ~/app/.env \
             -v ~/app/staticfiles:/app/staticfiles \
             -e DATABASE_URL="postgres://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/delty" \
@@ -187,8 +188,9 @@ jobs:
             -e REDIS_CACHE_URL="redis://:${{ secrets.REDIS_PASSWORD}}@${{ vars.DELTY_SERVER_IP }}:6379/4" \
             -e AWS_ACCESS_KEY_ID="${{ vars.AWS_ACCESS_KEY_ID}}" \
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY}}" \
+            -e GRPC_PORT=50051 \
             ${{ needs.build-image.outputs.delty-image }} \
-            sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+            sh -c "python manage.py collectstatic --noinput && python manage.py migrate && (gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 3 & poetry run python manage.py run_grpc_server)"
 
           # Stop and remove existing worker container
           docker stop delty-worker || true
@@ -221,14 +223,19 @@ jobs:
             -e AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False \
             -e AIRFLOW__CORE__EXECUTOR=LocalExecutor \
             -e AIRFLOW__CORE__LOAD_EXAMPLES=False \
-            -e GRPC_SERVER_ADDRESS=delty:50051 \
+            -e GRPC_SERVER_ADDRESS=${{ vars.DELTY_SERVER_IP }}:50051 \
             ${{ needs.build-image.outputs.delty-airflow-image }}
 
           # Check if the MinIO container exists
-          if [ ! "$(docker ps -a -q -f name=s3)" ]; then
+          if [ "$(docker ps -a -q -f name=s3)" ]; then
+            if [ "$(docker ps -q -f name=s3)" ]; then
+              echo "MinIO container is already running."
+            else
+              echo "Run MinIO container."
+              docker start s3
+            fi
+          else
             echo "MinIO container not found. Running the MinIO container for the first time."
-
-            # Run the MinIO (S3) service
             docker run -d --name s3 \
               --network delty_network \
               --env-file ~/app/.env \
@@ -238,9 +245,6 @@ jobs:
               -v ~/minio/data:/data \
               minio/minio:latest \
               server --address 0.0.0.0:9000 --console-address ":9001" /data
-          else
-            echo "MinIO container found. Starting the existing container."
-            docker start s3
           fi
 
           EOF
