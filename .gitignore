@@ -119,3 +119,5 @@ app/staticfiles
 
 # Lockalstack
 localstack/
+
+report.xml

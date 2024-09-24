@@ -218,6 +218,7 @@ jobs:
 
           # Run the delty-airflow service
           docker run -d --name delty-airflow \
+            --network delty_network \
             -p 8080:8080 \
             -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://delty_user:${{ secrets.DATABASE_PASSWORD }}@${{ vars.DELTY_SERVER_IP }}:5432/airflow" \
             -e AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False \

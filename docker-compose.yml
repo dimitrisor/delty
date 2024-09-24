@@ -4,7 +4,7 @@ services:
     build: .
     command: bash -c "poetry run python manage.py migrate \
       && (poetry run python manage.py runserver 0.0.0.0:8000 & poetry run python manage.py run_grpc_server)"
-    env_file: .env # Here we place all the secrets that should not be exposed in GH
+    env_file: .env
     volumes:
       - .:/app
     ports:
@@ -19,7 +19,7 @@ services:
     container_name: delty-worker
     build: .
     command: bash -c "poetry run python manage.py rundramatiq"
-    env_file: .env # Here we place all the secrets that should not be exposed in GH
+    env_file: .env
     volumes:
       - .:/app
     depends_on:
