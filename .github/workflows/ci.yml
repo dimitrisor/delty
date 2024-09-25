@@ -1,10 +1,9 @@
-name: CI1
+name: CI
 
 permissions:
   packages: write
   contents: read
 
-# The workflow will run whenever a pull request is created, updated, or merged
 on:
   pull_request:
 
@@ -19,9 +18,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: delty
-          POSTGRES_USER: delty_user
-          POSTGRES_PASSWORD: delty_pass
+          POSTGRES_DB: delty_tet_db
+          POSTGRES_USER: delty_tet_db_user
+          POSTGRES_PASSWORD: delty_tet_db_pass
         options: >-
           --health-cmd "pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB"
           --health-interval 10s
@@ -38,14 +37,8 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: "app.settings.test"
-      DATABASE_URL: "postgres://delty_user:delty_pass@localhost:5432/delty"
+      DATABASE_URL: "postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}"
     steps:
-      - name: "Check DATABASE_URL"
-        run: echo $DATABASE_URL
-      - name: "Write DATABASE_URL to file"
-        run: echo $DATABASE_URL > database_url.txt
-      - name: "Print DATABASE_URL from file"
-        run: cat database_url.txt
       - name: "Checkout GH repository"
         uses: actions/checkout@v4
       - name: "Setup Cue"
